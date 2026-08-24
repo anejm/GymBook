@@ -1,0 +1,694 @@
+import 'package:flutter/material.dart';
+
+import '../../models/exercise.dart';
+//import '../../models/recent_workout.dart';
+import 'active_workout_page.dart';
+import '../../temp_data/mock_exercises.dart';
+import '../../temp_data/recent_workout_data.dart';
+
+class WorkoutSetupPage extends StatefulWidget {
+  const WorkoutSetupPage({super.key});
+
+  @override
+  State<WorkoutSetupPage> createState() =>
+      _WorkoutSetupPageState();
+}
+
+class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
+  final TextEditingController workoutNameController =
+      TextEditingController();
+
+  List<Exercise> selectedExercises = [];
+
+  //dismiss
+
+  void dismissKeyboard() {
+    FocusManager.instance.primaryFocus?.unfocus();
+  }
+
+
+  @override
+  void dispose() {
+    workoutNameController.dispose();
+    super.dispose();
+  }
+
+  // --------------------------------------------------
+  // FORMAT DURATION
+  // --------------------------------------------------
+
+  String formatDuration(Duration duration) {
+    if (duration.inDays > 0) {
+      return '${duration.inDays}d';
+    }
+
+    if (duration.inHours > 0) {
+      final minutes = duration.inMinutes.remainder(60);
+
+      if (minutes == 0) {
+        return '${duration.inHours}h';
+      }
+
+      return '${duration.inHours}h ${minutes}m';
+    }
+
+    return '${duration.inMinutes}m';
+  }
+
+  // --------------------------------------------------
+  // EXERCISE MENU
+  // --------------------------------------------------
+
+  void openExerciseMenu() {
+
+    dismissKeyboard();
+
+    List<Exercise> temporarySelection =
+        List.from(selectedExercises);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              height:
+                  MediaQuery.of(context).size.height * 0.85,
+
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
+              ),
+
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius:
+                          BorderRadius.circular(10),
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Choose Exercises',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium,
+                          ),
+                        ),
+
+                        Text(
+                          '${temporarySelection.length} selected',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Expanded(
+                    child: ListView.builder(
+                      padding:
+                          const EdgeInsets.symmetric(
+                        horizontal: 16,
+                      ),
+
+                      itemCount:
+                          availableExercises.length,
+
+                      itemBuilder: (context, index) {
+                        final exercise =
+                            availableExercises[index];
+
+                        final isSelected =
+                            temporarySelection
+                                .contains(exercise);
+
+                        return GestureDetector(
+                          onTap: () {
+                            setModalState(() {
+                              if (isSelected) {
+                                temporarySelection
+                                    .remove(exercise);
+                              } else {
+                                temporarySelection
+                                    .add(exercise);
+                              }
+                            });
+                          },
+
+                          child: AnimatedContainer(
+                            duration: const Duration(
+                              milliseconds: 150,
+                            ),
+
+                            margin:
+                                const EdgeInsets.only(
+                              bottom: 10,
+                            ),
+
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withOpacity(0.08)
+                                  : Colors.white,
+
+                              borderRadius:
+                                  BorderRadius.circular(14),
+
+                              border: Border.all(
+                                color: isSelected
+                                    ? Theme.of(context)
+                                        .colorScheme
+                                        .primary
+                                    : Colors
+                                        .grey
+                                        .shade300,
+
+                                width:
+                                    isSelected ? 2 : 1,
+                              ),
+                            ),
+
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor:
+                                    isSelected
+                                        ? Theme.of(
+                                            context,
+                                          )
+                                            .colorScheme
+                                            .primary
+                                        : Colors
+                                            .grey
+                                            .shade100,
+
+                                child: Icon(
+                                  Icons.fitness_center,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors
+                                          .grey
+                                          .shade600,
+                                ),
+                              ),
+
+                              title: Text(
+                                exercise.name,
+                                style:
+                                    const TextStyle(
+                                  fontWeight:
+                                      FontWeight.w600,
+                                ),
+                              ),
+
+                              subtitle: Text(
+                                exercise.muscleGroup,
+                              ),
+
+                              trailing:
+                                  AnimatedSwitcher(
+                                duration:
+                                    const Duration(
+                                  milliseconds: 150,
+                                ),
+
+                                child: isSelected
+                                    ? Icon(
+                                        Icons
+                                            .check_circle,
+                                        key:
+                                            const ValueKey(
+                                          true,
+                                        ),
+                                        color:
+                                            Theme.of(
+                                          context,
+                                        )
+                                                .colorScheme
+                                                .primary,
+                                      )
+                                    : Icon(
+                                        Icons
+                                            .circle_outlined,
+                                        key:
+                                            const ValueKey(
+                                          false,
+                                        ),
+                                        color: Colors
+                                            .grey
+                                            .shade400,
+                                      ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+
+                  SafeArea(
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.all(16),
+
+                      child: SizedBox(
+                        width: double.infinity,
+
+                        child: ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              selectedExercises =
+                                  List.from(
+                                temporarySelection,
+                              );
+                            });
+
+                            Navigator.pop(context);
+                          },
+
+                          child: Text(
+                            'Add ${temporarySelection.length} Exercises',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // --------------------------------------------------
+  // RECENT WORKOUT MENU
+  // --------------------------------------------------
+
+  void openRecentWorkoutMenu() {
+  dismissKeyboard();
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) {
+      return Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(24),
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Recent Workouts',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineMedium,
+                  ),
+                ),
+              ),
+
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                  ),
+                  itemCount: recentWorkouts.length,
+                  itemBuilder: (context, index) {
+                    final workout =
+                        recentWorkouts[index];
+
+                    return Card(
+                      margin: const EdgeInsets.only(
+                        bottom: 10,
+                      ),
+                      child: ListTile(
+                        leading: const CircleAvatar(
+                          child: Icon(
+                            Icons.fitness_center,
+                          ),
+                        ),
+                        title: Text(
+                          workout.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          '${formatDuration(workout.timeAgo)} ago • '
+                          'Avg. ${formatDuration(workout.averageDuration)}',
+                        ),
+                        trailing: const Icon(
+                          Icons.chevron_right,
+                        ),
+                        onTap: () {
+                          setState(() {
+                            workoutNameController.text = workout.name;
+
+                            selectedExercises = List<Exercise>.from(workout.exercises);
+                          });
+
+                          Navigator.pop(context);
+                        },
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+  // --------------------------------------------------
+  // START WORKOUT
+  // --------------------------------------------------
+
+  void startWorkout() {
+    final workoutName =
+        workoutNameController.text.trim();
+
+    if (workoutName.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please enter a workout name.',
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    if (selectedExercises.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Please add at least one exercise.',
+          ),
+        ),
+      );
+
+      return;
+    }
+
+    Navigator.push(
+      context,
+
+      MaterialPageRoute(
+        builder: (_) => ActiveWorkoutPage(
+          workoutName: workoutName,
+          exercises:
+              List.from(selectedExercises),
+        ),
+      ),
+    );
+  }
+
+  // --------------------------------------------------
+  // BUILD
+  // --------------------------------------------------
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Workout Setup'),
+      ),
+
+      body: Column(
+        children: [
+          // ==========================================
+          // SCROLLABLE CONTENT
+          // ==========================================
+
+          Expanded(
+            child: ReorderableListView.builder(
+              buildDefaultDragHandles: false,
+
+              keyboardDismissBehavior:
+                  ScrollViewKeyboardDismissBehavior
+                      .onDrag,
+
+              padding: const EdgeInsets.fromLTRB(
+                20,
+                20,
+                20,
+                20,
+              ),
+
+              // --------------------------------------
+              // HEADER
+              // --------------------------------------
+
+              header: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+
+                children: [
+                  Text(
+                    'New Workout',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineMedium,
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  TextField(
+                    controller:
+                        workoutNameController,
+
+                    textInputAction:
+                        TextInputAction.done,
+
+                    decoration:
+                        const InputDecoration(
+                      labelText: 'Workout name',
+                      hintText:
+                          'e.g. Push Day',
+                      border:
+                          OutlineInputBorder(),
+                      prefixIcon: Icon(
+                        Icons.edit_outlined,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // --------------------------------
+                  // RECENT WORKOUTS
+                  // --------------------------------
+
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons.history,
+                      ),
+
+                      title: const Text(
+                        'Recent Workouts',
+                      ),
+
+                      subtitle: const Text(
+                        'Use a previous workout',
+                      ),
+
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                      ),
+
+                      onTap:
+                          openRecentWorkoutMenu,
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // --------------------------------
+                  // ADD EXERCISES
+                  // --------------------------------
+
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(
+                        Icons
+                            .add_circle_outline,
+                      ),
+
+                      title: const Text(
+                        'Add Exercises',
+                      ),
+
+                      subtitle: Text(
+                        selectedExercises
+                                .isEmpty
+                            ? 'Choose exercises'
+                            : '${selectedExercises.length} exercises selected',
+                      ),
+
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                      ),
+
+                      onTap:
+                          openExerciseMenu,
+                    ),
+                  ),
+
+                  if (selectedExercises
+                      .isNotEmpty) ...[
+                    const SizedBox(height: 20),
+
+                    Text(
+                      'Exercises',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge,
+                    ),
+
+                    const SizedBox(height: 8),
+                  ],
+                ],
+              ),
+
+              // --------------------------------------
+              // EXERCISES
+              // --------------------------------------
+
+              itemCount:
+                  selectedExercises.length,
+
+              onReorderItem:
+                  (oldIndex, newIndex) {
+                setState(() {
+                  final exercise =
+                      selectedExercises
+                          .removeAt(oldIndex);
+
+                  selectedExercises.insert(
+                    newIndex,
+                    exercise,
+                  );
+                });
+              },
+
+              itemBuilder:
+                  (context, index) {
+                final exercise =
+                    selectedExercises[index];
+
+                return Card(
+                  key: ValueKey(
+                    exercise.name,
+                  ),
+
+                  margin:
+                      const EdgeInsets.only(
+                    bottom: 8,
+                  ),
+
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      child: Text(
+                        '${index + 1}',
+                      ),
+                    ),
+
+                    title: Text(
+                      exercise.name,
+                    ),
+
+                    subtitle: Text(
+                      exercise.muscleGroup,
+                    ),
+
+                    trailing: ReorderableDragStartListener(
+                      index: index,
+                      child: const Icon(
+                        Icons.drag_handle,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+            
+          ),
+
+          // ==========================================
+          // START WORKOUT
+          // ==========================================
+
+          SafeArea(
+            child: Padding(
+              padding:
+                  const EdgeInsets.fromLTRB(
+                20,
+                8,
+                20,
+                20,
+              ),
+
+              child: SizedBox(
+                width: double.infinity,
+
+                child: ElevatedButton(
+                  onPressed: startWorkout,
+
+                  child: const Text(
+                    'Start Workout',
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
