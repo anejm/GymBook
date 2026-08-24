@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'dart:async';
 import '../../models/exercise.dart';
 
 class ActiveWorkoutPage extends StatefulWidget {
@@ -20,7 +20,42 @@ class ActiveWorkoutPage extends StatefulWidget {
 class _ActiveWorkoutPageState
     extends State<ActiveWorkoutPage> {
 
+  Timer? workoutTimer;
   int seconds = 0;
+
+  @override
+  void initState() {
+    super.initState();
+
+    workoutTimer = Timer.periodic(
+      const Duration(seconds: 1), (timer) {
+        setState(() {
+          seconds++;
+        });
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    workoutTimer?.cancel();
+    super.dispose();
+  }
+
+  String formatTime(int totalSeconds) {
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+
+    if (minutes <= 0) {
+      return '$seconds s';
+    } 
+    if (hours <= 0) {
+      return '$minutes m : ${seconds.toString().padLeft(2, '0')} s';
+    }
+
+    return '$hours h : ${minutes.toString().padLeft(2, '0')} m : ${seconds.toString().padLeft(2, '0')} s';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +100,7 @@ class _ActiveWorkoutPageState
               ),
 
               subtitle: Text(
-                '$seconds seconds',
+                formatTime(seconds),
               ),
             ),
           ),
