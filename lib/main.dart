@@ -9,8 +9,8 @@ import 'screens/workout/workout_setup_page.dart';
 import 'package:flutter/services.dart';
 
 import 'screens/history/history_page.dart';
-import 'screens/history/workout_details_page.dart';
-import 'screens/history/exercise_details_page.dart';
+//import 'screens/history/workout_details_page.dart';
+//import 'screens/history/exercise_details_page.dart';
 
 import 'screens/insights/insights_page.dart';
 import 'screens/calendar/calendar_page.dart';
@@ -52,8 +52,8 @@ class FitnessApp extends StatelessWidget {
         //'/workout/summary': (context) => const WorkoutSummaryPage(),
 
         '/history': (context) => const HistoryPage(),
-        '/history/details': (context) => const WorkoutDetailsPage(),
-        '/history/exercise': (context) => const ExerciseDetailsPage(),
+        //'/history/details': (context) => const WorkoutDetailsPage(),
+        //'/history/exercise': (context) => const ExerciseDetailsPage(),
 
         '/insights': (context) => const InsightsPage(),
 

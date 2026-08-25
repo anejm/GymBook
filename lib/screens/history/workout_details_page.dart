@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../../functions/format_time.dart';
+import '../../functions/format_date.dart';
+
+import '../../models/workout_details.dart';
+import 'exercise_details_page.dart';
+
 class WorkoutDetailsPage extends StatelessWidget {
-  const WorkoutDetailsPage({super.key});
+  final Workout workout;
+
+  const WorkoutDetailsPage({
+    super.key,
+    required this.workout,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,48 +26,67 @@ class WorkoutDetailsPage extends StatelessWidget {
 
         children: [
           Text(
-            'Push Workout',
-            style: Theme.of(context).textTheme.headlineMedium,
+            workout.name,
+            style: Theme.of(context)
+                .textTheme
+                .headlineMedium,
           ),
 
           const SizedBox(height: 8),
 
           Text(
-            '18 August 2026',
-            style: Theme.of(context).textTheme.bodyMedium,
+            formatDate(workout.date),
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium,
+          ),
+
+          const SizedBox(height: 8),
+
+          Text(
+            '${formatTime(workout.duration)} • '
+            '${workout.exercises.length} exercises • '
+            '${workout.totalSets} sets',
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium,
           ),
 
           const SizedBox(height: 24),
 
-          Card(
-            child: ListTile(
-              title: const Text('Bench Press'),
-              subtitle: const Text('3 sets'),
-              trailing: const Icon(
-                Icons.chevron_right,
-              ),
+          ...workout.exercises.map(
+            (completedExercise) {
+              return Card(
+                child: ListTile(
+                  title: Text(
+                    completedExercise
+                        .exercise
+                        .name,
+                  ),
 
-              onTap: () {
-                Navigator.pushNamed(
-                  context,
-                  '/history/exercise',
-                );
-              },
-            ),
-          ),
+                  subtitle: Text(
+                    '${completedExercise.sets.length} sets',
+                  ),
 
-          const Card(
-            child: ListTile(
-              title: Text('Incline Dumbbell Press'),
-              subtitle: Text('3 sets'),
-            ),
-          ),
+                  trailing: const Icon(
+                    Icons.chevron_right,
+                  ),
 
-          const Card(
-            child: ListTile(
-              title: Text('Dips'),
-              subtitle: Text('3 sets'),
-            ),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            ExerciseDetailsPage(
+                          completedExercise:
+                              completedExercise,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
           ),
         ],
       ),

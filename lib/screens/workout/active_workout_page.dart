@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+
+import '../../functions/format_time.dart';
+
 import '../../models/exercise.dart';
-import 'workout_summary_page.dart'; 
+import '../../models/workout_details.dart';
+import '../../temp_data/workout_history.dart';
+
+import 'workout_summary_page.dart';
 
 class ActiveWorkoutPage extends StatefulWidget {
   final String workoutName;
@@ -21,11 +27,21 @@ class ActiveWorkoutPage extends StatefulWidget {
 class _ActiveWorkoutPageState
     extends State<ActiveWorkoutPage> {
 
+  // Reps controllers
   final Map<int, List<TextEditingController>> setControllers = {};
 
-  TextEditingController getSetController(int exerciseIndex, int setIndex) {
-    final controllers =
-      setControllers.putIfAbsent(
+  // Weight controllers
+  final Map<int, List<TextEditingController>> weightControllers = {};
+
+  Timer? workoutTimer;
+  int seconds = 0;
+  int? expandedExerciseIndex;
+
+  TextEditingController getSetController(
+    int exerciseIndex,
+    int setIndex,
+  ) {
+    final controllers = setControllers.putIfAbsent(
       exerciseIndex,
       () => [],
     );
@@ -39,16 +55,31 @@ class _ActiveWorkoutPageState
     return controllers[setIndex];
   }
 
-  Timer? workoutTimer;
-  int seconds = 0;
-  int? expandedExerciseIndex;
+  TextEditingController getWeightController(
+    int exerciseIndex,
+    int setIndex,
+  ) {
+    final controllers = weightControllers.putIfAbsent(
+      exerciseIndex,
+      () => [],
+    );
+
+    while (controllers.length <= setIndex) {
+      controllers.add(
+        TextEditingController(),
+      );
+    }
+
+    return controllers[setIndex];
+  }
 
   @override
   void initState() {
     super.initState();
 
     workoutTimer = Timer.periodic(
-      const Duration(seconds: 1), (timer) {
+      const Duration(seconds: 1),
+      (timer) {
         setState(() {
           seconds++;
         });
@@ -66,42 +97,119 @@ class _ActiveWorkoutPageState
       }
     }
 
+    for (final controllers in weightControllers.values) {
+      for (final controller in controllers) {
+        controller.dispose();
+      }
+    }
+
     super.dispose();
   }
 
-  String formatTime(int totalSeconds) {
-    final hours = totalSeconds ~/ 3600;
-    final minutes = (totalSeconds % 3600) ~/ 60;
-    final seconds = totalSeconds % 60;
+  // --------------------------------------------------
+  // CREATE WORKOUT
+  // --------------------------------------------------
 
-    if (minutes <= 0) {
-      return '$seconds s';
-    } 
-    if (hours <= 0) {
-      return '$minutes m : ${seconds.toString().padLeft(2, '0')} s';
+  Workout createWorkout() {
+    final completedExercises = <CompletedExercise>[];
+
+    for (int exerciseIndex = 0;
+        exerciseIndex < widget.exercises.length;
+        exerciseIndex++) {
+
+      final exercise = widget.exercises[exerciseIndex];
+
+      final reps = setControllers[exerciseIndex] ?? [];
+      final weights = weightControllers[exerciseIndex] ?? [];
+
+      final sets = <WorkoutSet>[];
+
+      for (int setIndex = 0;
+          setIndex < reps.length;
+          setIndex++) {
+
+        final repsText = reps[setIndex].text.trim();
+        final weightText = weights[setIndex].text.trim();
+
+        // Ignore completely empty sets
+        if (repsText.isEmpty && weightText.isEmpty) {
+          continue;
+        }
+
+        final repsValue = int.tryParse(repsText);
+        final weightValue = double.tryParse(weightText);
+
+        if (repsValue == null) {
+          continue;
+        }
+
+        sets.add(
+          WorkoutSet(
+            weight: weightValue ?? 0,
+            reps: repsValue,
+          ),
+        );
+      }
+
+      completedExercises.add(
+        CompletedExercise(
+          exercise: exercise,
+          sets: sets,
+        ),
+      );
     }
 
-    return '$hours h : ${minutes.toString().padLeft(2, '0')} m : ${seconds.toString().padLeft(2, '0')} s';
+    return Workout(
+      name: widget.workoutName,
+      date: DateTime.now(),
+      duration: seconds,
+      exercises: completedExercises,
+    );
   }
 
-  void finishWorkout() {
-  final totalSets = setControllers.values.fold(
-    0,
-    (total, controllers) => total + controllers.length,
-  );
+  // --------------------------------------------------
+  // FINISH WORKOUT
+  // --------------------------------------------------
 
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (context) => WorkoutSummaryPage(
-        workoutName: widget.workoutName,
-        duration: seconds,
-        exerciseCount: widget.exercises.length,
-        totalSets: totalSets,
+  void finishWorkout() {
+    final workout = createWorkout();
+
+    WorkoutHistory.workouts.insert(0, workout);
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => WorkoutSummaryPage(
+          workout: workout,
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
+
+  // --------------------------------------------------
+  // USE SAME WEIGHT
+  // --------------------------------------------------
+
+  void useSameWeight(int exerciseIndex) {
+    final weights =
+        weightControllers[exerciseIndex] ?? [];
+
+    if (weights.isEmpty) {
+      return;
+    }
+
+    final firstWeight = weights.first.text;
+
+    if (firstWeight.isEmpty) {
+      return;
+    }
+
+    setState(() {
+      for (final controller in weights) {
+        controller.text = firstWeight;
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -113,14 +221,7 @@ class _ActiveWorkoutPageState
 
         actions: [
           IconButton(
-            onPressed: () {
-              finishWorkout();
-              Navigator.pushReplacementNamed(
-                context,
-                '/workout/summary',
-              );
-            },
-
+            onPressed: finishWorkout,
             icon: const Icon(
               Icons.check,
             ),
@@ -129,13 +230,13 @@ class _ActiveWorkoutPageState
       ),
 
       body: GestureDetector(
-
         onTap: () {
           FocusManager.instance.primaryFocus?.unfocus();
         },
 
         child: Column(
           children: [
+
             // --------------------------------
             // TIMER
             // --------------------------------
@@ -165,7 +266,7 @@ class _ActiveWorkoutPageState
             Expanded(
               child: ListView.builder(
                 keyboardDismissBehavior:
-                  ScrollViewKeyboardDismissBehavior.onDrag,
+                    ScrollViewKeyboardDismissBehavior.onDrag,
 
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -174,11 +275,17 @@ class _ActiveWorkoutPageState
                 itemCount: widget.exercises.length,
 
                 itemBuilder: (context, index) {
-                  final exercise = widget.exercises[index];
-                  final isExpanded = expandedExerciseIndex == index;
+                  final exercise =
+                      widget.exercises[index];
+
+                  final isExpanded =
+                      expandedExerciseIndex == index;
 
                   final controllers =
                       setControllers[index] ?? [];
+
+                  final weights =
+                      weightControllers[index] ?? [];
 
                   return Card(
                     margin: const EdgeInsets.only(
@@ -190,28 +297,36 @@ class _ActiveWorkoutPageState
 
                       child: Column(
                         children: [
-                          // -----------------------------
+
+                          // --------------------------------
                           // EXERCISE HEADER
-                          // -----------------------------
+                          // --------------------------------
 
                           InkWell(
                             onTap: () {
                               setState(() {
-                                if (expandedExerciseIndex == index) {
+                                if (expandedExerciseIndex ==
+                                    index) {
                                   expandedExerciseIndex = null;
                                 } else {
-                                  expandedExerciseIndex = index;
+                                  expandedExerciseIndex =
+                                      index;
                                 }
                               });
                             },
 
                             child: Row(
                               children: [
+
                                 CircleAvatar(
-                                  child: Text('${index + 1}'),
+                                  child: Text(
+                                    '${index + 1}',
+                                  ),
                                 ),
 
-                                const SizedBox(width: 12),
+                                const SizedBox(
+                                  width: 12,
+                                ),
 
                                 Expanded(
                                   child: Column(
@@ -221,16 +336,18 @@ class _ActiveWorkoutPageState
                                     children: [
                                       Text(
                                         exercise.name,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium,
+                                        style:
+                                            Theme.of(context)
+                                                .textTheme
+                                                .titleMedium,
                                       ),
 
                                       Text(
                                         exercise.muscleGroup,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall,
+                                        style:
+                                            Theme.of(context)
+                                                .textTheme
+                                                .bodySmall,
                                       ),
                                     ],
                                   ),
@@ -238,8 +355,10 @@ class _ActiveWorkoutPageState
 
                                 Icon(
                                   isExpanded
-                                      ? Icons.keyboard_arrow_up
-                                      : Icons.keyboard_arrow_down,
+                                      ? Icons
+                                          .keyboard_arrow_up
+                                      : Icons
+                                          .keyboard_arrow_down,
                                 ),
                               ],
                             ),
@@ -252,9 +371,11 @@ class _ActiveWorkoutPageState
                           if (isExpanded) ...[
                             const SizedBox(height: 10),
 
+                            // ADD SET
                             SizedBox(
                               width: double.infinity,
                               height: 30,
+
                               child: OutlinedButton.icon(
                                 onPressed: () {
                                   setState(() {
@@ -262,47 +383,103 @@ class _ActiveWorkoutPageState
                                       index,
                                       controllers.length,
                                     );
+
+                                    getWeightController(
+                                      index,
+                                      controllers.length,
+                                    );
                                   });
                                 },
-                                icon: const Icon(Icons.add),
+
+                                icon: const Icon(
+                                  Icons.add,
+                                ),
+
                                 label: const Text(
                                   'Add Set',
-                                  style: TextStyle(fontSize: 14),
+                                  style:
+                                      TextStyle(fontSize: 14),
                                 ),
                               ),
                             ),
 
                             const SizedBox(height: 10),
 
+                            // SAME WEIGHT
+                            if (weights.isNotEmpty)
+                              Align(
+                                alignment:
+                                    Alignment.centerRight,
+
+                                child: TextButton(
+                                  onPressed: () {
+                                    useSameWeight(index);
+                                  },
+
+                                  child: const Text(
+                                    'Use same weight',
+                                  ),
+                                ),
+                              ),
+
+                            // HEADER
                             Row(
                               children: [
                                 SizedBox(
                                   width: 50,
                                   child: Text(
                                     'Set',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium,
+                                    style:
+                                        Theme.of(context)
+                                            .textTheme
+                                            .labelMedium,
                                   ),
                                 ),
 
                                 Expanded(
                                   child: Text(
-                                    'Reps',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium,
+                                    'Weight',
+                                    style:
+                                        Theme.of(context)
+                                            .textTheme
+                                            .labelMedium,
                                   ),
+                                ),
+
+                                const SizedBox(width: 8),
+
+                                Expanded(
+                                  child: Text(
+                                    'Reps',
+                                    style:
+                                        Theme.of(context)
+                                            .textTheme
+                                            .labelMedium,
+                                  ),
+                                ),
+
+                                const SizedBox(
+                                  width: 48,
                                 ),
                               ],
                             ),
 
                             const SizedBox(height: 8),
 
-                            ...controllers.asMap().entries.map(
+                            // SETS
+                            ...controllers
+                                .asMap()
+                                .entries
+                                .map(
                               (entry) {
-                                final setIndex = entry.key;
-                                final controller = entry.value;
+                                final setIndex =
+                                    entry.key;
+
+                                final controller =
+                                    entry.value;
+
+                                final weightController =
+                                    weights[setIndex];
 
                                 return Padding(
                                   padding:
@@ -312,6 +489,7 @@ class _ActiveWorkoutPageState
 
                                   child: Row(
                                     children: [
+
                                       SizedBox(
                                         width: 50,
                                         child: Text(
@@ -319,43 +497,65 @@ class _ActiveWorkoutPageState
                                         ),
                                       ),
 
+                                      // WEIGHT
                                       Expanded(
                                         child: TextField(
-                                          controller: controller,
+                                          controller:
+                                              weightController,
 
-                                          keyboardType: TextInputType.number,
-                                          textInputAction: TextInputAction.done,
-
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.black.withOpacity(0.8),
+                                          keyboardType:
+                                              const TextInputType
+                                                  .numberWithOptions(
+                                            decimal: true,
                                           ),
 
-                                          decoration: InputDecoration(
-                                            hintText: 'Reps',
+                                          textInputAction:
+                                              TextInputAction.next,
+
+                                          decoration:
+                                              InputDecoration(
+                                            hintText: 'kg',
 
                                             hintStyle: TextStyle(
-                                              color: Colors.grey.shade400,
-                                              fontSize: 14,
-                                            ),
-
-                                            enabledBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
-                                                color: Colors.grey.shade300,
-                                              ),
-                                              borderRadius: BorderRadius.circular(10),
-                                            ),
-
-                                            focusedBorder: OutlineInputBorder(
-                                              borderSide: BorderSide(
-                                                color: Theme.of(context).colorScheme.primary,
-                                                width: 2,
-                                              ),
-                                              borderRadius: BorderRadius.circular(10),
+                                              color: Colors.grey.withOpacity(0.4)
                                             ),
 
                                             isDense: true,
+
+                                            enabledBorder:
+                                                OutlineInputBorder(
+                                              borderSide:
+                                                  BorderSide(
+                                                color: Colors
+                                                    .grey
+                                                    .shade300,
+                                              ),
+
+                                              borderRadius:
+                                                  BorderRadius
+                                                      .circular(
+                                                10,
+                                              ),
+                                            ),
+
+                                            focusedBorder:
+                                                OutlineInputBorder(
+                                              borderSide:
+                                                  BorderSide(
+                                                color: Theme.of(
+                                                        context)
+                                                    .colorScheme
+                                                    .primary,
+
+                                                width: 2,
+                                              ),
+
+                                              borderRadius:
+                                                  BorderRadius
+                                                      .circular(
+                                                10,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -364,21 +564,100 @@ class _ActiveWorkoutPageState
                                         width: 8,
                                       ),
 
-                                      IconButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            final removed =
-                                                controllers
-                                                    .removeAt(
-                                              setIndex,
-                                            );
+                                      // REPS
+                                      Expanded(
+                                        child: TextField(
+                                          controller:
+                                              controller,
 
-                                            removed.dispose();
-                                          });
-                                        },
+                                          keyboardType:
+                                              TextInputType
+                                                  .number,
 
-                                        icon: const Icon(
-                                          Icons.remove,
+                                          textInputAction:
+                                              TextInputAction
+                                                  .done,
+
+                                          decoration:
+                                              InputDecoration(
+                                            hintText: 'Reps',
+                                            hintStyle: TextStyle(
+                                              color: Colors.grey.withOpacity(0.4)
+                                            ),
+
+                                            isDense: true,
+
+                                            enabledBorder:
+                                                OutlineInputBorder(
+                                              borderSide:
+                                                  BorderSide(
+                                                color: Colors
+                                                    .grey
+                                                    .shade300,
+                                              ),
+
+                                              borderRadius:
+                                                  BorderRadius
+                                                      .circular(
+                                                10,
+                                              ),
+                                            ),
+
+                                            focusedBorder:
+                                                OutlineInputBorder(
+                                              borderSide:
+                                                  BorderSide(
+                                                color: Theme.of(
+                                                        context)
+                                                    .colorScheme
+                                                    .primary,
+
+                                                width: 2,
+                                              ),
+
+                                              borderRadius:
+                                                  BorderRadius
+                                                      .circular(
+                                                10,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+
+                                      const SizedBox(
+                                        width: 4,
+                                      ),
+
+                                      // REMOVE
+                                      SizedBox(
+                                        width: 44,
+
+                                        child: IconButton(
+                                          onPressed: () {
+                                            setState(() {
+                                              final removed =
+                                                  controllers
+                                                      .removeAt(
+                                                setIndex,
+                                              );
+
+                                              removed.dispose();
+
+                                              final removedWeight =
+                                                  weights
+                                                      .removeAt(
+                                                setIndex,
+                                              );
+
+                                              removedWeight
+                                                  .dispose();
+                                            });
+                                          },
+
+                                          icon: const Icon(
+                                            Icons.remove,
+                                          ),
                                         ),
                                       ),
                                     ],
@@ -386,7 +665,6 @@ class _ActiveWorkoutPageState
                                 );
                               },
                             ),
-
                           ],
                         ],
                       ),
@@ -404,24 +682,22 @@ class _ActiveWorkoutPageState
               child: Padding(
                 padding: const EdgeInsets.all(16),
 
-                child: ElevatedButton(
-                  onPressed: () {
-                    finishWorkout();
-                    Navigator.pushReplacementNamed(
-                      context,
-                      '/workout/summary',
-                    );
-                  },
+                child: SizedBox(
+                  width: double.infinity,
 
-                  child: const Text(
-                    'Finish Workout',
+                  child: ElevatedButton(
+                    onPressed: finishWorkout,
+
+                    child: const Text(
+                      'Finish Workout',
+                    ),
                   ),
                 ),
               ),
             ),
           ],
         ),
-      )
+      ),
     );
   }
 }

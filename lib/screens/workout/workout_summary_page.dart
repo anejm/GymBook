@@ -1,33 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../functions/format_time.dart';
+
+import '../../models/workout_details.dart';
+
 class WorkoutSummaryPage extends StatelessWidget {
-  final String workoutName;
-  final int duration;
-  final int exerciseCount;
-  final int totalSets;
+  final Workout workout;
 
   const WorkoutSummaryPage({
     super.key,
-    required this.workoutName,
-    required this.duration,
-    required this.exerciseCount,
-    required this.totalSets,
+    required this.workout,
   });
-
-  String formatTime(int totalSeconds) {
-    final hours = totalSeconds ~/ 3600;
-    final minutes = (totalSeconds % 3600) ~/ 60;
-    final seconds = totalSeconds % 60;
-
-    if (minutes <= 0) {
-      return '$seconds s';
-    } 
-    if (hours <= 0) {
-      return '$minutes m : ${seconds.toString().padLeft(2, '0')} s';
-    }
-
-    return '$hours h : ${minutes.toString().padLeft(2, '0')} m : ${seconds.toString().padLeft(2, '0')} s';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,19 +23,24 @@ class WorkoutSummaryPage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
 
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment:
+              CrossAxisAlignment.start,
 
           children: [
             Text(
               'Workout Complete!',
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineMedium,
             ),
 
             const SizedBox(height: 8),
 
             Text(
-              workoutName,
-              style: Theme.of(context).textTheme.titleMedium,
+              workout.name,
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium,
             ),
 
             const SizedBox(height: 24),
@@ -61,21 +49,39 @@ class WorkoutSummaryPage extends StatelessWidget {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.timer),
-                    title: const Text('Duration'),
-                    trailing: Text(formatTime(duration)),
+                    leading:
+                        const Icon(Icons.timer),
+
+                    title:
+                        const Text('Duration'),
+
+                    trailing:
+                        Text(formatTime(
+                      workout.duration,
+                    )),
                   ),
 
                   ListTile(
-                    leading: const Icon(Icons.fitness_center),
-                    title: const Text('Exercises'),
-                    trailing: Text('$exerciseCount'),
+                    leading: const Icon(
+                      Icons.fitness_center,
+                    ),
+
+                    title:
+                        const Text('Exercises'),
+
+                    trailing:
+                        Text('${workout.exercises.length}'),
                   ),
 
                   ListTile(
-                    leading: const Icon(Icons.repeat),
-                    title: const Text('Total Sets'),
-                    trailing: Text('$totalSets'),
+                    leading:
+                        const Icon(Icons.repeat),
+
+                    title:
+                        const Text('Total Sets'),
+
+                    trailing:
+                        Text('${workout.totalSets}'),
                   ),
                 ],
               ),
@@ -85,6 +91,7 @@ class WorkoutSummaryPage extends StatelessWidget {
 
             SizedBox(
               width: double.infinity,
+
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.pushNamedAndRemoveUntil(

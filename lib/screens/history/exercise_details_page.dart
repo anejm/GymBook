@@ -1,72 +1,110 @@
 import 'package:flutter/material.dart';
 
+import '../../models/workout_details.dart';
+
 class ExerciseDetailsPage extends StatelessWidget {
-  const ExerciseDetailsPage({super.key});
+  final CompletedExercise completedExercise;
+
+  const ExerciseDetailsPage({
+    super.key,
+    required this.completedExercise,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final exercise =
+        completedExercise.exercise;
+
+    final sets =
+        completedExercise.sets;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Exercise Details'),
+        title: const Text(
+          'Exercise Details',
+        ),
       ),
 
-      body: Padding(
+      body: ListView(
         padding: const EdgeInsets.all(20),
 
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            exercise.name,
+            style: Theme.of(context)
+                .textTheme
+                .headlineMedium,
+          ),
 
-          children: [
-            Text(
-              'Bench Press',
-              style: Theme.of(context).textTheme.headlineMedium,
+          const SizedBox(height: 8),
+
+          Text(
+            exercise.muscleGroup,
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium,
+          ),
+
+          const SizedBox(height: 24),
+
+          Card(
+            child: Column(
+              children: [
+                if (sets.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Text(
+                      'No completed sets.',
+                    ),
+                  ),
+
+                ...sets.asMap().entries.map(
+                  (entry) {
+                    final index =
+                        entry.key;
+
+                    final set =
+                        entry.value;
+
+                    return ListTile(
+                      title: Text(
+                        'Set ${index + 1}',
+                      ),
+
+                      trailing: Text(
+                        '${set.weight} kg × '
+                        '${set.reps}',
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
+          ),
 
-            const SizedBox(height: 24),
+          const SizedBox(height: 24),
 
-            const Card(
-              child: Column(
-                children: [
-                  ListTile(
-                    title: Text('Set 1'),
-                    trailing: Text('60 kg × 10'),
-                  ),
+          Text(
+            'Progress',
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge,
+          ),
 
-                  ListTile(
-                    title: Text('Set 2'),
-                    trailing: Text('60 kg × 9'),
-                  ),
+          const SizedBox(height: 12),
 
-                  ListTile(
-                    title: Text('Set 3'),
-                    trailing: Text('60 kg × 8'),
-                  ),
-                ],
-              ),
-            ),
+          const Card(
+            child: SizedBox(
+              height: 200,
 
-            const SizedBox(height: 24),
-
-            Text(
-              'Progress',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-
-            const SizedBox(height: 12),
-
-            const Card(
-              child: SizedBox(
-                height: 200,
-
-                child: Center(
-                  child: Text(
-                    'Exercise progress chart',
-                  ),
+              child: Center(
+                child: Text(
+                  'Exercise progress chart',
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
