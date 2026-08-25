@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../models/exercise.dart';
+import 'workout_summary_page.dart'; 
 
 class ActiveWorkoutPage extends StatefulWidget {
   final String workoutName;
@@ -83,6 +84,25 @@ class _ActiveWorkoutPageState
     return '$hours h : ${minutes.toString().padLeft(2, '0')} m : ${seconds.toString().padLeft(2, '0')} s';
   }
 
+  void finishWorkout() {
+  final totalSets = setControllers.values.fold(
+    0,
+    (total, controllers) => total + controllers.length,
+  );
+
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (context) => WorkoutSummaryPage(
+        workoutName: widget.workoutName,
+        duration: seconds,
+        exerciseCount: widget.exercises.length,
+        totalSets: totalSets,
+      ),
+    ),
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,6 +114,7 @@ class _ActiveWorkoutPageState
         actions: [
           IconButton(
             onPressed: () {
+              finishWorkout();
               Navigator.pushReplacementNamed(
                 context,
                 '/workout/summary',
@@ -229,7 +250,29 @@ class _ActiveWorkoutPageState
                           // --------------------------------
 
                           if (isExpanded) ...[
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 10),
+
+                            SizedBox(
+                              width: double.infinity,
+                              height: 30,
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  setState(() {
+                                    getSetController(
+                                      index,
+                                      controllers.length,
+                                    );
+                                  });
+                                },
+                                icon: const Icon(Icons.add),
+                                label: const Text(
+                                  'Add Set',
+                                  style: TextStyle(fontSize: 14),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 10),
 
                             Row(
                               children: [
@@ -343,35 +386,7 @@ class _ActiveWorkoutPageState
                                 );
                               },
                             ),
-                            // --------------------------------
-                          // ADD SET
-                          // --------------------------------
 
-                          const SizedBox(height: 8),
-                            SizedBox(
-                              width: double.infinity,
-                              height: 42,
-
-                              child: OutlinedButton.icon(
-                                onPressed: () {
-                                  setState(() {
-                                    getSetController(
-                                      index,
-                                      controllers.length,
-                                    );
-                                  });
-                                },
-
-                                icon: const Icon(
-                                  Icons.add,
-                                ),
-
-                                label: const Text(
-                                  'Add Set',
-                                  style: TextStyle(fontSize: 14),
-                                ),
-                              ),
-                            ),
                           ],
                         ],
                       ),
@@ -391,6 +406,7 @@ class _ActiveWorkoutPageState
 
                 child: ElevatedButton(
                   onPressed: () {
+                    finishWorkout();
                     Navigator.pushReplacementNamed(
                       context,
                       '/workout/summary',

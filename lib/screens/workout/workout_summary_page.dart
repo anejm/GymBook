@@ -1,7 +1,33 @@
 import 'package:flutter/material.dart';
 
 class WorkoutSummaryPage extends StatelessWidget {
-  const WorkoutSummaryPage({super.key});
+  final String workoutName;
+  final int duration;
+  final int exerciseCount;
+  final int totalSets;
+
+  const WorkoutSummaryPage({
+    super.key,
+    required this.workoutName,
+    required this.duration,
+    required this.exerciseCount,
+    required this.totalSets,
+  });
+
+  String formatTime(int totalSeconds) {
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+
+    if (minutes <= 0) {
+      return '$seconds s';
+    } 
+    if (hours <= 0) {
+      return '$minutes m : ${seconds.toString().padLeft(2, '0')} s';
+    }
+
+    return '$hours h : ${minutes.toString().padLeft(2, '0')} m : ${seconds.toString().padLeft(2, '0')} s';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,27 +48,34 @@ class WorkoutSummaryPage extends StatelessWidget {
               style: Theme.of(context).textTheme.headlineMedium,
             ),
 
+            const SizedBox(height: 8),
+
+            Text(
+              workoutName,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+
             const SizedBox(height: 24),
 
-            const Card(
+            Card(
               child: Column(
                 children: [
                   ListTile(
-                    leading: Icon(Icons.timer),
-                    title: Text('Duration'),
-                    trailing: Text('58 min'),
+                    leading: const Icon(Icons.timer),
+                    title: const Text('Duration'),
+                    trailing: Text(formatTime(duration)),
                   ),
 
                   ListTile(
-                    leading: Icon(Icons.fitness_center),
-                    title: Text('Exercises'),
-                    trailing: Text('6'),
+                    leading: const Icon(Icons.fitness_center),
+                    title: const Text('Exercises'),
+                    trailing: Text('$exerciseCount'),
                   ),
 
                   ListTile(
-                    leading: Icon(Icons.repeat),
-                    title: Text('Total Sets'),
-                    trailing: Text('18'),
+                    leading: const Icon(Icons.repeat),
+                    title: const Text('Total Sets'),
+                    trailing: Text('$totalSets'),
                   ),
                 ],
               ),
@@ -50,17 +83,20 @@ class WorkoutSummaryPage extends StatelessWidget {
 
             const Spacer(),
 
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/home',
-                  (route) => false,
-                );
-              },
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    '/home',
+                    (route) => false,
+                  );
+                },
 
-              child: const Text(
-                'Back to Home',
+                child: const Text(
+                  'Back to Home',
+                ),
               ),
             ),
           ],
