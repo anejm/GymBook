@@ -2,67 +2,83 @@ import '../models/exercise.dart';
 
 List<Exercise> availableExercises =  [
     Exercise(
+      id: 'bench_press',
       name: 'Bench Press',
-      muscleGroup: 'Chest',
+      primaryMuscle: 'Chest',
     ),
     Exercise(
+      id: 'incline dp',
       name: 'Incline Dumbbell Press',
-      muscleGroup: 'Chest',
+      primaryMuscle: 'Chest',
     ),
     Exercise(
+      id: '',
       name: 'Dumbbell Fly',
-      muscleGroup: 'Chest',
+      primaryMuscle: 'Chest',
     ),
     Exercise(
+      id: '',
       name: 'Lat Pulldown',
-      muscleGroup: 'Back',
+      primaryMuscle: 'Back',
     ),
     Exercise(
+      id: '',
       name: 'Barbell Row',
-      muscleGroup: 'Back',
+      primaryMuscle: 'Back',
     ),
     Exercise(
+      id: '',
       name: 'Seated Cable Row',
-      muscleGroup: 'Back',
+      primaryMuscle: 'Back',
     ),
     Exercise(
+      id: '',
       name: 'Shoulder Press',
-      muscleGroup: 'Shoulders',
+      primaryMuscle: 'Shoulders',
     ),
     Exercise(
+      id: '',
       name: 'Lateral Raise',
-      muscleGroup: 'Shoulders',
+      primaryMuscle: 'Shoulders',
     ),
     Exercise(
+      id: '',
       name: 'Barbell Curl',
-      muscleGroup: 'Biceps',
+      primaryMuscle: 'Biceps',
     ),
     Exercise(
+      id: '',
       name: 'Tricep Pushdown',
-      muscleGroup: 'Triceps',
+      primaryMuscle: 'Triceps',
     ),
     Exercise(
+      id: '',
       name: 'Squat',
-      muscleGroup: 'Legs',
+      primaryMuscle: 'Legs',
     ),
     Exercise(
+      id: '',
       name: 'Leg Press',
-      muscleGroup: 'Legs',
+      primaryMuscle: 'Legs',
     ),
     Exercise(
+      id: '',
       name: 'Romanian Deadlift',
-      muscleGroup: 'Hamstrings',
+      primaryMuscle: 'Hamstrings',
     ),
     Exercise(
+      id: '',
       name: 'Leg Curl',
-      muscleGroup: 'Hamstrings',
+      primaryMuscle: 'Hamstrings',
     ),
     Exercise(
+      id: '',
       name: 'Calf Raise',
-      muscleGroup: 'Calves',
+      primaryMuscle: 'Calves',
     ),
     Exercise(
+      id: '',
       name: 'Hip Thrust',
-      muscleGroup: 'Glutes',
+      primaryMuscle: 'Glutes',
     ),
   ];

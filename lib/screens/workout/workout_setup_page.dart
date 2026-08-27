@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../services/exercise_service.dart';
 import '../../models/exercise.dart';
-//import '../../models/recent_workout.dart';
 import 'active_workout_page.dart';
-import '../../temp_data/mock_exercises.dart';
 import '../../temp_data/recent_workout_data.dart';
 
 class WorkoutSetupPage extends StatefulWidget {
@@ -19,13 +18,57 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
       TextEditingController();
 
   List<Exercise> selectedExercises = [];
+  List<Exercise> availableExercises = [];
 
-  //dismiss
+  bool isLoadingExercises = false;
+  String? exerciseError;
+
+  // --------------------------------------------------
+  // LOAD EXERCISES
+  // --------------------------------------------------
+
+  Future<void> loadExercises() async {
+    setState(() {
+      isLoadingExercises = true;
+      exerciseError = null;
+    });
+
+    try {
+      final exercises = await ExerciseService.getExercises();
+
+      if (!mounted) return;
+
+      setState(() {
+        availableExercises = exercises;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        exerciseError = e.toString();
+      });
+    } finally {
+      if (!mounted) return;
+
+      setState(() {
+        isLoadingExercises = false;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadExercises();
+  }
+
+  // --------------------------------------------------
+  // DISMISS KEYBOARD
+  // --------------------------------------------------
 
   void dismissKeyboard() {
     FocusManager.instance.primaryFocus?.unfocus();
   }
-
 
   @override
   void dispose() {
@@ -43,7 +86,8 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
     }
 
     if (duration.inHours > 0) {
-      final minutes = duration.inMinutes.remainder(60);
+      final minutes =
+          duration.inMinutes.remainder(60);
 
       if (minutes == 0) {
         return '${duration.inHours}h';
@@ -60,7 +104,6 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
   // --------------------------------------------------
 
   void openExerciseMenu() {
-
     dismissKeyboard();
 
     List<Exercise> temporarySelection =
@@ -76,14 +119,12 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
             return Container(
               height:
                   MediaQuery.of(context).size.height * 0.85,
-
               decoration: const BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.vertical(
                   top: Radius.circular(24),
                 ),
               ),
-
               child: Column(
                 children: [
                   const SizedBox(height: 12),
@@ -100,7 +141,6 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
 
                   Padding(
                     padding: const EdgeInsets.all(20),
-
                     child: Row(
                       children: [
                         Expanded(
@@ -111,7 +151,6 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                                 .headlineMedium,
                           ),
                         ),
-
                         Text(
                           '${temporarySelection.length} selected',
                           style: Theme.of(context)
@@ -122,157 +161,210 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                     ),
                   ),
 
+                  // --------------------------------------
+                  // EXERCISE LIST
+                  // --------------------------------------
+
                   Expanded(
-                    child: ListView.builder(
-                      padding:
-                          const EdgeInsets.symmetric(
-                        horizontal: 16,
-                      ),
-
-                      itemCount:
-                          availableExercises.length,
-
-                      itemBuilder: (context, index) {
-                        final exercise =
-                            availableExercises[index];
-
-                        final isSelected =
-                            temporarySelection
-                                .contains(exercise);
-
-                        return GestureDetector(
-                          onTap: () {
-                            setModalState(() {
-                              if (isSelected) {
-                                temporarySelection
-                                    .remove(exercise);
-                              } else {
-                                temporarySelection
-                                    .add(exercise);
-                              }
-                            });
-                          },
-
-                          child: AnimatedContainer(
-                            duration: const Duration(
-                              milliseconds: 150,
-                            ),
-
-                            margin:
-                                const EdgeInsets.only(
-                              bottom: 10,
-                            ),
-
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? Theme.of(context)
-                                      .colorScheme
-                                      .primary
-                                      .withOpacity(0.08)
-                                  : Colors.white,
-
-                              borderRadius:
-                                  BorderRadius.circular(14),
-
-                              border: Border.all(
-                                color: isSelected
-                                    ? Theme.of(context)
-                                        .colorScheme
-                                        .primary
-                                    : Colors
-                                        .grey
-                                        .shade300,
-
-                                width:
-                                    isSelected ? 2 : 1,
-                              ),
-                            ),
-
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor:
-                                    isSelected
-                                        ? Theme.of(
-                                            context,
-                                          )
-                                            .colorScheme
-                                            .primary
-                                        : Colors
-                                            .grey
-                                            .shade100,
-
-                                child: Icon(
-                                  Icons.fitness_center,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : Colors
-                                          .grey
-                                          .shade600,
-                                ),
-                              ),
-
-                              title: Text(
-                                exercise.name,
-                                style:
-                                    const TextStyle(
-                                  fontWeight:
-                                      FontWeight.w600,
-                                ),
-                              ),
-
-                              subtitle: Text(
-                                exercise.muscleGroup,
-                              ),
-
-                              trailing:
-                                  AnimatedSwitcher(
-                                duration:
-                                    const Duration(
-                                  milliseconds: 150,
-                                ),
-
-                                child: isSelected
-                                    ? Icon(
-                                        Icons
-                                            .check_circle,
-                                        key:
-                                            const ValueKey(
-                                          true,
-                                        ),
-                                        color:
-                                            Theme.of(
-                                          context,
-                                        )
-                                                .colorScheme
-                                                .primary,
-                                      )
-                                    : Icon(
-                                        Icons
-                                            .circle_outlined,
-                                        key:
-                                            const ValueKey(
-                                          false,
-                                        ),
-                                        color: Colors
-                                            .grey
-                                            .shade400,
+                    child: isLoadingExercises
+                        ? const Center(
+                            child:
+                                CircularProgressIndicator(),
+                          )
+                        : exerciseError != null
+                            ? Center(
+                                child: Column(
+                                  mainAxisSize:
+                                      MainAxisSize.min,
+                                  children: [
+                                    const Text(
+                                      'Failed to load exercises',
+                                    ),
+                                    const SizedBox(
+                                      height: 8,
+                                    ),
+                                    ElevatedButton(
+                                      onPressed:
+                                          loadExercises,
+                                      child: const Text(
+                                        'Retry',
                                       ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : ListView.builder(
+                                padding:
+                                    const EdgeInsets
+                                        .symmetric(
+                                  horizontal: 16,
+                                ),
+                                itemCount:
+                                    availableExercises
+                                        .length,
+                                itemBuilder:
+                                    (context, index) {
+                                  final exercise =
+                                      availableExercises[
+                                          index];
+
+                                  final isSelected =
+                                      temporarySelection
+                                          .any(
+                                    (selected) =>
+                                        selected.id ==
+                                        exercise.id,
+                                  );
+
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setModalState(() {
+                                        if (isSelected) {
+                                          temporarySelection
+                                              .removeWhere(
+                                            (selected) =>
+                                                selected
+                                                    .id ==
+                                                exercise.id,
+                                          );
+                                        } else {
+                                          temporarySelection
+                                              .add(
+                                            exercise,
+                                          );
+                                        }
+                                      });
+                                    },
+                                    child:
+                                        AnimatedContainer(
+                                      duration:
+                                          const Duration(
+                                        milliseconds: 150,
+                                      ),
+                                      margin:
+                                          const EdgeInsets
+                                              .only(
+                                        bottom: 10,
+                                      ),
+                                      decoration:
+                                          BoxDecoration(
+                                        color: isSelected
+                                            ? Theme.of(
+                                                context,
+                                              )
+                                                .colorScheme
+                                                .primary
+                                                .withOpacity(
+                                                  0.08,
+                                                )
+                                            : Colors.white,
+                                        borderRadius:
+                                            BorderRadius
+                                                .circular(
+                                          14,
+                                        ),
+                                        border:
+                                            Border.all(
+                                          color: isSelected
+                                              ? Theme.of(
+                                                  context,
+                                                )
+                                                  .colorScheme
+                                                  .primary
+                                              : Colors.grey
+                                                  .shade300,
+                                          width:
+                                              isSelected
+                                                  ? 2
+                                                  : 1,
+                                        ),
+                                      ),
+                                      child: ListTile(
+                                        leading:
+                                            CircleAvatar(
+                                          backgroundColor:
+                                              isSelected
+                                                  ? Theme.of(
+                                                      context,
+                                                    )
+                                                      .colorScheme
+                                                      .primary
+                                                  : Colors
+                                                      .grey
+                                                      .shade100,
+                                          child: Icon(
+                                            Icons
+                                                .fitness_center,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : Colors
+                                                    .grey
+                                                    .shade600,
+                                          ),
+                                        ),
+                                        title: Text(
+                                          exercise.name,
+                                          style:
+                                              const TextStyle(
+                                            fontWeight:
+                                                FontWeight
+                                                    .w600,
+                                          ),
+                                        ),
+                                        subtitle: Text(
+                                          exercise
+                                              .primaryMuscle,
+                                        ),
+                                        trailing:
+                                            AnimatedSwitcher(
+                                          duration:
+                                              const Duration(
+                                            milliseconds:
+                                                150,
+                                          ),
+                                          child: isSelected
+                                              ? Icon(
+                                                  Icons
+                                                      .check_circle,
+                                                  key:
+                                                      const ValueKey(
+                                                    true,
+                                                  ),
+                                                  color: Theme.of(
+                                                    context,
+                                                  )
+                                                      .colorScheme
+                                                      .primary,
+                                                )
+                                              : Icon(
+                                                  Icons
+                                                      .circle_outlined,
+                                                  key:
+                                                      const ValueKey(
+                                                    false,
+                                                  ),
+                                                  color: Colors
+                                                      .grey
+                                                      .shade400,
+                                                ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
                   ),
+
+                  // --------------------------------------
+                  // ADD BUTTON
+                  // --------------------------------------
 
                   SafeArea(
                     child: Padding(
                       padding:
                           const EdgeInsets.all(16),
-
                       child: SizedBox(
                         width: double.infinity,
-
                         child: ElevatedButton(
                           onPressed: () {
                             setState(() {
@@ -284,7 +376,6 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
 
                             Navigator.pop(context);
                           },
-
                           child: Text(
                             'Add ${temporarySelection.length} Exercises',
                           ),
@@ -306,102 +397,115 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
   // --------------------------------------------------
 
   void openRecentWorkoutMenu() {
-  dismissKeyboard();
+    dismissKeyboard();
 
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    builder: (context) {
-      return Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(24),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height:
+              MediaQuery.of(context).size.height * 0.85,
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(24),
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
+          child: SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
 
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Recent Workouts',
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineMedium,
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey,
+                    borderRadius:
+                        BorderRadius.circular(10),
                   ),
                 ),
-              ),
 
-              Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Recent Workouts',
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineMedium,
+                    ),
                   ),
-                  itemCount: recentWorkouts.length,
-                  itemBuilder: (context, index) {
-                    final workout =
-                        recentWorkouts[index];
-
-                    return Card(
-                      margin: const EdgeInsets.only(
-                        bottom: 10,
-                      ),
-                      child: ListTile(
-                        leading: const CircleAvatar(
-                          child: Icon(
-                            Icons.fitness_center,
-                          ),
-                        ),
-                        title: Text(
-                          workout.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        subtitle: Text(
-                          '${formatDuration(workout.timeAgo)} ago • '
-                          'Avg. ${formatDuration(workout.averageDuration)}',
-                        ),
-                        trailing: const Icon(
-                          Icons.chevron_right,
-                        ),
-                        onTap: () {
-                          setState(() {
-                            workoutNameController.text = workout.name;
-
-                            selectedExercises = List<Exercise>.from(workout.exercises);
-                          });
-
-                          Navigator.pop(context);
-                        },
-                      ),
-                    );
-                  },
                 ),
-              ),
-            ],
+
+                Expanded(
+                  child: ListView.builder(
+                    padding:
+                        const EdgeInsets.symmetric(
+                      horizontal: 16,
+                    ),
+                    itemCount: recentWorkouts.length,
+                    itemBuilder: (context, index) {
+                      final workout =
+                          recentWorkouts[index];
+
+                      return Card(
+                        margin:
+                            const EdgeInsets.only(
+                          bottom: 10,
+                        ),
+                        child: ListTile(
+                          leading:
+                              const CircleAvatar(
+                            child: Icon(
+                              Icons.fitness_center,
+                            ),
+                          ),
+                          title: Text(
+                            workout.name,
+                            style:
+                                const TextStyle(
+                              fontWeight:
+                                  FontWeight.w600,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '${formatDuration(workout.timeAgo)} ago • '
+                            'Avg. ${formatDuration(workout.averageDuration)}',
+                          ),
+                          trailing:
+                              const Icon(
+                            Icons.chevron_right,
+                          ),
+                          onTap: () {
+                            setState(() {
+                              workoutNameController
+                                      .text =
+                                  workout.name;
+
+                              selectedExercises =
+                                  List<Exercise>.from(
+                                workout.exercises,
+                              );
+                            });
+
+                            Navigator.pop(context);
+                          },
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
-}
+        );
+      },
+    );
+  }
 
   // --------------------------------------------------
   // START WORKOUT
@@ -437,7 +541,6 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
 
     Navigator.push(
       context,
-
       MaterialPageRoute(
         builder: (_) => ActiveWorkoutPage(
           workoutName: workoutName,
@@ -458,7 +561,6 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
       appBar: AppBar(
         title: const Text('Workout Setup'),
       ),
-
       body: Column(
         children: [
           // ==========================================
@@ -487,7 +589,6 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
               header: Column(
                 crossAxisAlignment:
                     CrossAxisAlignment.start,
-
                 children: [
                   Text(
                     'New Workout',
@@ -501,15 +602,12 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                   TextField(
                     controller:
                         workoutNameController,
-
                     textInputAction:
                         TextInputAction.done,
-
                     decoration:
                         const InputDecoration(
                       labelText: 'Workout name',
-                      hintText:
-                          'e.g. Push Day',
+                      hintText: 'e.g. Push Day',
                       border:
                           OutlineInputBorder(),
                       prefixIcon: Icon(
@@ -529,19 +627,15 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                       leading: const Icon(
                         Icons.history,
                       ),
-
                       title: const Text(
                         'Recent Workouts',
                       ),
-
                       subtitle: const Text(
                         'Use a previous workout',
                       ),
-
                       trailing: const Icon(
                         Icons.chevron_right,
                       ),
-
                       onTap:
                           openRecentWorkoutMenu,
                     ),
@@ -556,32 +650,25 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                   Card(
                     child: ListTile(
                       leading: const Icon(
-                        Icons
-                            .add_circle_outline,
+                        Icons.add_circle_outline,
                       ),
-
                       title: const Text(
                         'Add Exercises',
                       ),
-
                       subtitle: Text(
-                        selectedExercises
-                                .isEmpty
+                        selectedExercises.isEmpty
                             ? 'Choose exercises'
                             : '${selectedExercises.length} exercises selected',
                       ),
-
                       trailing: const Icon(
                         Icons.chevron_right,
                       ),
-
                       onTap:
                           openExerciseMenu,
                     ),
                   ),
 
-                  if (selectedExercises
-                      .isNotEmpty) ...[
+                  if (selectedExercises.isNotEmpty) ...[
                     const SizedBox(height: 20),
 
                     Text(
@@ -624,30 +711,26 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
 
                 return Card(
                   key: ValueKey(
-                    exercise.name,
+                    exercise.id,
                   ),
-
                   margin:
                       const EdgeInsets.only(
                     bottom: 8,
                   ),
-
                   child: ListTile(
                     leading: CircleAvatar(
                       child: Text(
                         '${index + 1}',
                       ),
                     ),
-
                     title: Text(
                       exercise.name,
                     ),
-
                     subtitle: Text(
-                      exercise.muscleGroup,
+                      exercise.primaryMuscle,
                     ),
-
-                    trailing: ReorderableDragStartListener(
+                    trailing:
+                        ReorderableDragStartListener(
                       index: index,
                       child: const Icon(
                         Icons.drag_handle,
@@ -657,7 +740,6 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                 );
               },
             ),
-            
           ),
 
           // ==========================================
@@ -673,13 +755,10 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                 20,
                 20,
               ),
-
               child: SizedBox(
                 width: double.infinity,
-
                 child: ElevatedButton(
                   onPressed: startWorkout,
-
                   child: const Text(
                     'Start Workout',
                   ),

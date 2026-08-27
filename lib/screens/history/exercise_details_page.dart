@@ -39,7 +39,7 @@ class ExerciseDetailsPage extends StatelessWidget {
           const SizedBox(height: 8),
 
           Text(
-            exercise.muscleGroup,
+            exercise.primaryMuscle,
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium,

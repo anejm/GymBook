@@ -5,7 +5,8 @@ import '../../functions/format_time.dart';
 
 import '../../models/exercise.dart';
 import '../../models/workout_details.dart';
-import '../../temp_data/workout_history.dart';
+import '../../services/workout_service.dart';
+import '../../temp_data/user.dart';
 
 import 'workout_summary_page.dart';
 
@@ -171,19 +172,43 @@ class _ActiveWorkoutPageState
   // FINISH WORKOUT
   // --------------------------------------------------
 
-  void finishWorkout() {
+  bool isSaving = false;
+
+  Future<void> finishWorkout() async {
+
+    if (isSaving) return;
+
     final workout = createWorkout();
 
-    WorkoutHistory.workouts.insert(0, workout);
+    setState(() {
+      isSaving = true;
+    });
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => WorkoutSummaryPage(
-          workout: workout,
+    try {
+      await WorkoutService.saveWorkout(
+        userId: CurrentUser.id,
+        workout: workout,
+      );
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => WorkoutSummaryPage(workout: workout),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        isSaving = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Napaka pri shranjevanju: $e')),
+      );
+    }
   }
 
   // --------------------------------------------------
@@ -220,10 +245,22 @@ class _ActiveWorkoutPageState
         ),
 
         actions: [
-          IconButton(
-            onPressed: finishWorkout,
-            icon: const Icon(
-              Icons.check,
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: isSaving
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : IconButton(
+                      onPressed: finishWorkout,
+                      icon: const Icon(Icons.check),
+                    ),
             ),
           ),
         ],
@@ -343,7 +380,7 @@ class _ActiveWorkoutPageState
                                       ),
 
                                       Text(
-                                        exercise.muscleGroup,
+                                        exercise.primaryMuscle,
                                         style:
                                             Theme.of(context)
                                                 .textTheme
@@ -686,11 +723,14 @@ class _ActiveWorkoutPageState
                   width: double.infinity,
 
                   child: ElevatedButton(
-                    onPressed: finishWorkout,
-
-                    child: const Text(
-                      'Finish Workout',
-                    ),
+                    onPressed: isSaving ? null : finishWorkout,
+                    child: isSaving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Finish Workout'),
                   ),
                 ),
               ),
