@@ -86,12 +86,15 @@ class HomeContent extends StatefulWidget {
 class _HomeContentState extends State<HomeContent> {
   late Future<Map<String, dynamic>?> recentWorkoutFuture;
 
+  Future<Map<String, dynamic>?> loadRecentWorkout() async {
+    final userId = await CurrentUser.id;
+    return WorkoutService.getRecentWorkout(userId: userId);
+  }
+  
   @override
   void initState() {
     super.initState();
-    recentWorkoutFuture = WorkoutService.getRecentWorkout(
-      userId: CurrentUser.id,
-    );
+    recentWorkoutFuture = loadRecentWorkout();
   }
 
   @override

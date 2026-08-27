@@ -186,7 +186,7 @@ class _ActiveWorkoutPageState
 
     try {
       await WorkoutService.saveWorkout(
-        userId: CurrentUser.id,
+        userId: await CurrentUser.id,
         workout: workout,
       );
 

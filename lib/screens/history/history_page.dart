@@ -21,17 +21,18 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   void initState() {
     super.initState();
-    workoutsFuture = WorkoutService.getWorkoutHistory(
-      userId: CurrentUser.id,
-    );
+    workoutsFuture = loadWorkouts();
   }
 
   Future<void> refresh() async {
     setState(() {
-      workoutsFuture = WorkoutService.getWorkoutHistory(
-        userId: CurrentUser.id,
-      );
+      workoutsFuture = loadWorkouts();
     });
+  }
+
+  Future<List<Workout>> loadWorkouts() async {
+    final userId = await CurrentUser.id;
+    return WorkoutService.getWorkoutHistory(userId: userId);
   }
 
   @override

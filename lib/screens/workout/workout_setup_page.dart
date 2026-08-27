@@ -74,7 +74,7 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
 
   try {
     final history = await WorkoutService.getWorkoutHistory(
-      userId: CurrentUser.id,
+      userId: await CurrentUser.id,
     );
 
     // Samo zadnji trening vsakega unikatnega imena.
