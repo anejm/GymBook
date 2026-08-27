@@ -45,4 +45,43 @@ class WorkoutService {
       );
     }
   }
+
+  static Future<List<Workout>> getWorkoutHistory({
+    required String userId,
+  }) async {
+    final response = await http.get(
+      Uri.parse('${ExerciseService.baseUrl}/users/$userId/workouts'),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to load workout history: ${response.statusCode}',
+      );
+    }
+
+    final List<dynamic> data = jsonDecode(response.body);
+
+    return data.map((json) => Workout.fromJson(json)).toList();
+  }
+  static Future<Map<String, dynamic>?> getRecentWorkout({
+    required String userId,
+  }) async {
+    final response = await http.get(
+      Uri.parse('${ExerciseService.baseUrl}/users/$userId/recent-workout'),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to load recent workout: ${response.statusCode}',
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded == null) {
+      return null; // ni še nobenega treninga
+    }
+
+    return decoded as Map<String, dynamic>;
+  }
 }

@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import '../history/history_page.dart';
 import '../insights/insights_page.dart';
 import '../profile/profile_page.dart';
+import '../../services/workout_service.dart';
+import '../../temp_data/user.dart';
+import '../../functions/format_time.dart';
+import '../../functions/format_date.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,26 +18,28 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int currentIndex = 0;
 
-  final List<Widget> pages = const [
-    HomeContent(),
-    HistoryPage(),
-    InsightsPage(),
-    ProfilePage(),
-  ];
+  void goToTab(int index) {
+    setState(() {
+      currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    final List<Widget> pages = [
+      HomeContent(onGoToHistory: () => goToTab(1)),
+      const HistoryPage(),
+      const InsightsPage(),
+      const ProfilePage(),
+    ];
+
     return Scaffold(
       body: pages[currentIndex],
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
 
-        onTap: (index) {
-          setState(() {
-            currentIndex = index;
-          });
-        },
+        onTap: goToTab,
 
         items: const [
           BottomNavigationBarItem(
@@ -65,8 +71,28 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class HomeContent extends StatelessWidget {
-  const HomeContent({super.key});
+class HomeContent extends StatefulWidget {
+  final VoidCallback onGoToHistory;
+
+  const HomeContent({
+    super.key,
+    required this.onGoToHistory,
+  });
+
+  @override
+  State<HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<HomeContent> {
+  late Future<Map<String, dynamic>?> recentWorkoutFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    recentWorkoutFuture = WorkoutService.getRecentWorkout(
+      userId: CurrentUser.id,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -137,27 +163,70 @@ class HomeContent extends StatelessWidget {
 
               const SizedBox(height: 12),
 
-              Card(
-                child: ListTile(
-                  leading: const CircleAvatar(
-                    child: Icon(Icons.fitness_center),
-                  ),
-
-                  title: const Text(
-                    'No workouts yet',
-                  ),
-
-                  subtitle: const Text(
-                    'Your recent workouts will appear here.',
-                  ),
-
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      '/history',
+              FutureBuilder<Map<String, dynamic>?>(
+                future: recentWorkoutFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(20),
+                        child: Center(
+                          child: CircularProgressIndicator(),
+                        ),
+                      ),
                     );
-                  },
-                ),
+                  }
+
+                  if (snapshot.hasError) {
+                    return Card(
+                      child: ListTile(
+                        leading: const CircleAvatar(
+                          child: Icon(Icons.error_outline),
+                        ),
+                        title: const Text('Failed to load'),
+                        subtitle: Text('${snapshot.error}'),
+                        onTap: widget.onGoToHistory,
+                      ),
+                    );
+                  }
+
+                  final recent = snapshot.data;
+
+                  if (recent == null) {
+                    return Card(
+                      child: ListTile(
+                        leading: const CircleAvatar(
+                          child: Icon(Icons.fitness_center),
+                        ),
+                        title: const Text(
+                          'No workouts yet',
+                        ),
+                        subtitle: const Text(
+                          'Your recent workouts will appear here.',
+                        ),
+                        onTap: widget.onGoToHistory,
+                      ),
+                    );
+                  }
+
+                  final date = DateTime.parse(recent['started_at']);
+                  final duration = recent['duration_seconds'] as int;
+
+                  return Card(
+                    child: ListTile(
+                      leading: const CircleAvatar(
+                        child: Icon(Icons.fitness_center),
+                      ),
+                      title: Text(recent['name']),
+                      subtitle: Text(
+                        '${formatDate(date)} • ${formatTime(duration)}',
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: widget.onGoToHistory,
+                    ),
+                  );
+                },
               ),
             ],
           ),
