@@ -28,30 +28,18 @@ class LoginPage extends StatelessWidget {
 
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(
-                    context,
-                    '/home',
-                  );
-                },
-                child: const Text('Continue'),
-              ),
-
-              const SizedBox(height: 16),
-
-              OutlinedButton(
-                onPressed: () {
-                  // Login boš dodal kasneje.
+                  Navigator.pushNamed(context, '/login/form');
                 },
                 child: const Text('Login'),
               ),
 
               const SizedBox(height: 16),
 
-              TextButton(
+              OutlinedButton(
                 onPressed: () {
-                  // Google login boš dodal kasneje.
+                  Navigator.pushNamed(context, '/register');
                 },
-                child: const Text('Continue with Google'),
+                child: const Text('Create Account'),
               ),
             ],
           ),
