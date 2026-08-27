@@ -3,7 +3,13 @@ import 'package:flutter/material.dart';
 import '../../services/exercise_service.dart';
 import '../../models/exercise.dart';
 import 'active_workout_page.dart';
-import '../../temp_data/recent_workout_data.dart';
+//import '../../temp_data/recent_workout_data.dart';
+
+//import '../../models/recent_workout.dart';
+import '../../services/workout_service.dart';
+import '../../temp_data/user.dart';
+import '../../functions/format_date.dart';
+import '../../models/workout_details.dart';
 
 class WorkoutSetupPage extends StatefulWidget {
   const WorkoutSetupPage({super.key});
@@ -56,10 +62,58 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
     }
   }
 
+  List<Workout> recentWorkouts = [];
+  bool isLoadingRecentWorkouts = false;
+  String? recentWorkoutsError;
+
+  Future<void> loadRecentWorkouts() async {
+  setState(() {
+    isLoadingRecentWorkouts = true;
+    recentWorkoutsError = null;
+  });
+
+  try {
+    final history = await WorkoutService.getWorkoutHistory(
+      userId: CurrentUser.id,
+    );
+
+    // Samo zadnji trening vsakega unikatnega imena.
+    // history je že sortiran DESC po started_at (backend to počne),
+    // torej prvi zadetek vsakega imena je najnovejši.
+    final seenNames = <String>{};
+    final deduped = <Workout>[];
+
+    for (final workout in history) {
+      if (seenNames.add(workout.name)) {
+        deduped.add(workout);
+      }
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      recentWorkouts = deduped;
+    });
+  } catch (e) {
+    if (!mounted) return;
+
+    setState(() {
+      recentWorkoutsError = e.toString();
+    });
+  } finally {
+    if (!mounted) return;
+
+    setState(() {
+      isLoadingRecentWorkouts = false;
+    });
+  }
+}
+
   @override
   void initState() {
     super.initState();
     loadExercises();
+    loadRecentWorkouts();
   }
 
   // --------------------------------------------------
@@ -405,8 +459,7 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Container(
-          height:
-              MediaQuery.of(context).size.height * 0.85,
+          height: MediaQuery.of(context).size.height * 0.85,
           decoration: const BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.vertical(
@@ -423,8 +476,7 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                   height: 4,
                   decoration: BoxDecoration(
                     color: Colors.grey,
-                    borderRadius:
-                        BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
 
@@ -434,70 +486,72 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       'Recent Workouts',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineMedium,
+                      style: Theme.of(context).textTheme.headlineMedium,
                     ),
                   ),
                 ),
 
                 Expanded(
-                  child: ListView.builder(
-                    padding:
-                        const EdgeInsets.symmetric(
-                      horizontal: 16,
-                    ),
-                    itemCount: recentWorkouts.length,
-                    itemBuilder: (context, index) {
-                      final workout =
-                          recentWorkouts[index];
+                  child: recentWorkoutsError != null
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text('Failed to load recent workouts'),
+                              const SizedBox(height: 8),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                  loadRecentWorkouts();
+                                },
+                                child: const Text('Retry'),
+                              ),
+                            ],
+                          ),
+                        )
+                      : recentWorkouts.isEmpty
+                          ? const Center(
+                              child: Text('No past workouts yet.'),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              itemCount: recentWorkouts.length,
+                              itemBuilder: (context, index) {
+                                final workout = recentWorkouts[index];
 
-                      return Card(
-                        margin:
-                            const EdgeInsets.only(
-                          bottom: 10,
-                        ),
-                        child: ListTile(
-                          leading:
-                              const CircleAvatar(
-                            child: Icon(
-                              Icons.fitness_center,
+                                return Card(
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  child: ListTile(
+                                    leading: const CircleAvatar(
+                                      child: Icon(Icons.fitness_center),
+                                    ),
+                                    title: Text(
+                                      workout.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      '${formatDate(workout.date)} • '
+                                      '${formatDuration(Duration(seconds: workout.duration))}',
+                                    ),
+                                    trailing: const Icon(Icons.chevron_right),
+                                    onTap: () {
+                                      setState(() {
+                                        workoutNameController.text = workout.name;
+                                        selectedExercises = workout.exercises
+                                            .map((ce) => ce.exercise)
+                                            .toList();
+                                      });
+
+                                      Navigator.pop(context);
+                                    },
+                                  ),
+                                );
+                              },
                             ),
-                          ),
-                          title: Text(
-                            workout.name,
-                            style:
-                                const TextStyle(
-                              fontWeight:
-                                  FontWeight.w600,
-                            ),
-                          ),
-                          subtitle: Text(
-                            '${formatDuration(workout.timeAgo)} ago • '
-                            'Avg. ${formatDuration(workout.averageDuration)}',
-                          ),
-                          trailing:
-                              const Icon(
-                            Icons.chevron_right,
-                          ),
-                          onTap: () {
-                            setState(() {
-                              workoutNameController
-                                      .text =
-                                  workout.name;
-
-                              selectedExercises =
-                                  List<Exercise>.from(
-                                workout.exercises,
-                              );
-                            });
-
-                            Navigator.pop(context);
-                          },
-                        ),
-                      );
-                    },
-                  ),
                 ),
               ],
             ),
@@ -624,20 +678,15 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
 
                   Card(
                     child: ListTile(
-                      leading: const Icon(
-                        Icons.history,
+                      leading: const Icon(Icons.history),
+                      title: const Text('Recent Workouts'),
+                      subtitle: Text(
+                        isLoadingRecentWorkouts
+                            ? 'Loading...'
+                            : 'Use a previous workout',
                       ),
-                      title: const Text(
-                        'Recent Workouts',
-                      ),
-                      subtitle: const Text(
-                        'Use a previous workout',
-                      ),
-                      trailing: const Icon(
-                        Icons.chevron_right,
-                      ),
-                      onTap:
-                          openRecentWorkoutMenu,
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: isLoadingRecentWorkouts ? null : openRecentWorkoutMenu,
                     ),
                   ),
 
