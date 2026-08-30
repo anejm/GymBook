@@ -1,27 +1,27 @@
 class UserProfile {
   final String firstName;
   final String lastName;
-  final String email;
-  final DateTime birthDate;
   final double? weightKg;
+  final double? heightCm;
+  final DateTime? birthDate;
 
   UserProfile({
     required this.firstName,
     required this.lastName,
-    required this.email,
-    required this.birthDate,
     this.weightKg,
+    this.heightCm,
+    this.birthDate,
   });
 
   String get fullName => '$firstName $lastName';
 
-  factory UserProfile.fromJson(Map<String, dynamic> json) {
-    return UserProfile(
-      firstName: json['first_name'],
-      lastName: json['last_name'],
-      email: json['email'],
-      birthDate: DateTime.parse(json['birth_date']),
-      weightKg: (json['weight_kg'] as num?)?.toDouble(),
-    );
-  }
+  factory UserProfile.fromJson(Map<String, dynamic> json) => UserProfile(
+        firstName: json['first_name'] as String,
+        lastName: json['last_name'] as String,
+        weightKg: (json['weight_kg'] as num?)?.toDouble(),
+        heightCm: (json['height_cm'] as num?)?.toDouble(),
+        birthDate: json['birth_date'] != null
+            ? DateTime.parse(json['birth_date'] as String)
+            : null,
+      );
 }

@@ -18,6 +18,7 @@ import 'screens/history/history_page.dart';
 import 'screens/insights/insights_page.dart';
 import 'screens/calendar/calendar_page.dart';
 import 'screens/profile/profile_page.dart';
+import 'screens/profile/personal_info.dart';
 
 import 'theme/app_theme.dart';
 
@@ -63,6 +64,7 @@ class FitnessApp extends StatelessWidget {
         '/calendar': (context) => const CalendarPage(),
 
         '/profile': (context) => const ProfilePage(),
+        '/profile/personal_info': (context) => PersonalInfoPage(),
       },
     );
   }

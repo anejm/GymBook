@@ -13,7 +13,8 @@ class AuthService {
     required String firstName,
     required String lastName,
     required DateTime birthDate,
-    double? weightKg,
+    required double weightKg,
+    required double heightCm,
   }) async {
     final response = await http.post(
       Uri.parse('${ExerciseService.baseUrl}/auth/register'),
@@ -25,6 +26,7 @@ class AuthService {
         'last_name': lastName,
         'birth_date': birthDate.toIso8601String().split('T')[0],
         'weight_kg': weightKg,
+        'height_cm': heightCm
       }),
     );
 

@@ -17,6 +17,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final weightController = TextEditingController();
+  final heightController = TextEditingController();
 
   DateTime? birthDate;
 
@@ -30,6 +31,7 @@ class _RegisterPageState extends State<RegisterPage> {
     emailController.dispose();
     passwordController.dispose();
     weightController.dispose();
+    heightController.dispose();
     super.dispose();
   }
 
@@ -58,6 +60,16 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
+    final weight = double.tryParse(weightController.text.trim());
+    final height = double.tryParse(heightController.text.trim());
+
+    if (weight == null || height == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vnesi veljavno težo in višino.')),
+      );
+      return;
+    }
+
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -70,9 +82,8 @@ class _RegisterPageState extends State<RegisterPage> {
         firstName: firstNameController.text.trim(),
         lastName: lastNameController.text.trim(),
         birthDate: birthDate!,
-        weightKg: weightController.text.trim().isEmpty
-            ? null
-            : double.tryParse(weightController.text.trim()),
+        weightKg: weight,
+        heightCm: height,
       );
 
       if (!mounted) return;
@@ -177,9 +188,32 @@ class _RegisterPageState extends State<RegisterPage> {
                 controller: weightController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(
-                  labelText: 'Weight (kg) — optional',
+                  labelText: 'Weight (kg)',
                   border: OutlineInputBorder(),
                 ),
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please Enter your weight';
+                  }
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: heightController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: 'Height (cm)',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null) {
+                    return 'Please Enter your height';
+                  }
+                  return null;
+                },
               ),
 
               const SizedBox(height: 16),
