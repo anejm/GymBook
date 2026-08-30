@@ -26,5 +26,12 @@ class ExerciseCache extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clear() {
+    exercises = [];     
+    isLoading = false;
+    error = null;
+    notifyListeners();
+  }
+
   Future<void> refresh() => load();
 }

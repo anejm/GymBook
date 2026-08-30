@@ -1,14 +1,14 @@
 import 'package:flutter/foundation.dart';
 
-import '../models/workout_details.dart';
-import '../services/workout_service.dart';
+import '../../models/profile.dart';
+import '../services/profile_service.dart';
 import '../temp_data/user.dart';
 
-class WorkoutCache extends ChangeNotifier {
-  WorkoutCache._();
-  static final instance = WorkoutCache._();
+class ProfileCache extends ChangeNotifier {
+  ProfileCache._();
+  static final instance = ProfileCache._();
 
-  List<Workout> workouts = [];
+  UserProfile? profile;
   bool isLoading = false;
   Object? error;
 
@@ -19,7 +19,7 @@ class WorkoutCache extends ChangeNotifier {
 
     try {
       final userId = await CurrentUser.id;
-      workouts = await WorkoutService.getWorkoutHistory(userId: userId);
+      profile = await ProfileService.getProfile(userId: userId);
     } catch (e) {
       error = e;
     }
@@ -28,12 +28,12 @@ class WorkoutCache extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> refresh() => load();
+
   void clear() {
-    workouts = [];       
+    profile = null;
     isLoading = false;
     error = null;
     notifyListeners();
   }
-
-  Future<void> refresh() => load();
 }

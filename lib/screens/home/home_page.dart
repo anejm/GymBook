@@ -9,6 +9,7 @@ import '../../functions/format_time.dart';
 import '../../functions/format_date.dart';
 import '../../cache/workout_cache.dart';
 import '../../cache/exercise_cache.dart';
+import '../../cache/profile_cache.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -31,6 +32,7 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     WorkoutCache.instance.load();
     ExerciseCache.instance.load();
+    ProfileCache.instance.load();
   }
 
   @override
