@@ -1,22 +1,22 @@
 import '../services/auth_service.dart';
 
 class CurrentUser {
-  static String? _cachedId;
+  static Future<String>? _future;
 
-  static Future<String> get id async {
-    if (_cachedId != null) return _cachedId!;
+  static Future<String> get id {
+    return _future ??= _load();
+  }
 
+  static Future<String> _load() async {
     final id = await AuthService.getUserId();
-
     if (id == null) {
+      _future = null;
       throw Exception('No user logged in');
     }
-
-    _cachedId = id;
     return id;
   }
 
   static void clear() {
-    _cachedId = null;
+    _future = null;
   }
 }

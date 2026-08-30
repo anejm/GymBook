@@ -63,6 +63,7 @@ class WorkoutService {
 
     return data.map((json) => Workout.fromJson(json)).toList();
   }
+  
   static Future<Map<String, dynamic>?> getRecentWorkout({
     required String userId,
   }) async {

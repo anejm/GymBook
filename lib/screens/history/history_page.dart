@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../../functions/format_time.dart';
 import '../../functions/format_date.dart';
 
+import '../../cache/workout_cache.dart';
 import '../../models/workout_details.dart';
-import '../../services/workout_service.dart';
-import '../../temp_data/user.dart';
+//import '../../services/workout_service.dart';
+//import '../../temp_data/user.dart';
 import 'workout_details_page.dart';
 
 class HistoryPage extends StatefulWidget {
@@ -16,23 +17,19 @@ class HistoryPage extends StatefulWidget {
 }
 
 class _HistoryPageState extends State<HistoryPage> {
-  late Future<List<Workout>> workoutsFuture;
+  final cache = WorkoutCache.instance;
+  void _onUpdate() => setState(() {});
 
   @override
   void initState() {
     super.initState();
-    workoutsFuture = loadWorkouts();
+    cache.addListener(_onUpdate);
   }
 
-  Future<void> refresh() async {
-    setState(() {
-      workoutsFuture = loadWorkouts();
-    });
-  }
-
-  Future<List<Workout>> loadWorkouts() async {
-    final userId = await CurrentUser.id;
-    return WorkoutService.getWorkoutHistory(userId: userId);
+  @override
+  void dispose() {
+    cache.removeListener(_onUpdate);
+    super.dispose();
   }
 
   @override
@@ -42,22 +39,21 @@ class _HistoryPageState extends State<HistoryPage> {
         title: const Text('History'),
       ),
 
-      body: FutureBuilder<List<Workout>>(
-        future: workoutsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: Builder(
+        builder: (context) {
+          if (cache.isLoading && cache.workouts.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.hasError) {
+          if (cache.error != null && cache.workouts.isEmpty) {
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Failed to load history: ${snapshot.error}'),
+                  Text('Failed to load history: ${cache.error}'),
                   const SizedBox(height: 8),
                   ElevatedButton(
-                    onPressed: refresh,
+                    onPressed: cache.refresh,
                     child: const Text('Retry'),
                   ),
                 ],
@@ -65,14 +61,14 @@ class _HistoryPageState extends State<HistoryPage> {
             );
           }
 
-          final workouts = snapshot.data ?? [];
+          final workouts = cache.workouts;
 
           if (workouts.isEmpty) {
             return const Center(child: Text('No workouts yet.'));
           }
 
           return RefreshIndicator(
-            onRefresh: refresh,
+            onRefresh: cache.refresh,
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: workouts.length,

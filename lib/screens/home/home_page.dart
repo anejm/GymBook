@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../history/history_page.dart';
 import '../insights/insights_page.dart';
 import '../profile/profile_page.dart';
-import '../../services/workout_service.dart';
-import '../../temp_data/user.dart';
+//import '../../services/workout_service.dart';
+//import '../../temp_data/user.dart';
 import '../../functions/format_time.dart';
 import '../../functions/format_date.dart';
+import '../../cache/workout_cache.dart';
+import '../../cache/exercise_cache.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -22,6 +24,13 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       currentIndex = index;
     });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WorkoutCache.instance.load();
+    ExerciseCache.instance.load();
   }
 
   @override
@@ -84,17 +93,66 @@ class HomeContent extends StatefulWidget {
 }
 
 class _HomeContentState extends State<HomeContent> {
-  late Future<Map<String, dynamic>?> recentWorkoutFuture;
-
-  Future<Map<String, dynamic>?> loadRecentWorkout() async {
-    final userId = await CurrentUser.id;
-    return WorkoutService.getRecentWorkout(userId: userId);
-  }
+  final cache = WorkoutCache.instance;
+  void _onUpdate() => setState(() {});
   
   @override
   void initState() {
     super.initState();
-    recentWorkoutFuture = loadRecentWorkout();
+    cache.addListener(_onUpdate);
+  }
+
+  @override
+  void dispose() {
+    cache.removeListener(_onUpdate);
+    super.dispose();
+  }
+
+  Widget _buildRecentWorkoutCard() {
+    if (cache.isLoading && cache.workouts.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
+    if (cache.error != null && cache.workouts.isEmpty) {
+      return Card(
+        child: ListTile(
+          leading: const CircleAvatar(child: Icon(Icons.error_outline)),
+          title: const Text('Failed to load'),
+          subtitle: Text('${cache.error}'),
+          onTap: widget.onGoToHistory,
+        ),
+      );
+    }
+
+    if (cache.workouts.isEmpty) {
+      return Card(
+        child: ListTile(
+          leading: const CircleAvatar(child: Icon(Icons.fitness_center)),
+          title: const Text('No workouts yet'),
+          subtitle: const Text('Your recent workouts will appear here.'),
+          onTap: widget.onGoToHistory,
+        ),
+      );
+    }
+
+    final recent = cache.workouts.first;
+
+    return Card(
+      child: ListTile(
+        leading: const CircleAvatar(child: Icon(Icons.fitness_center)),
+        title: Text(recent.name),
+        subtitle: Text(
+          '${formatDate(recent.date)} • ${formatTime(recent.duration)}',
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: widget.onGoToHistory,
+      ),
+    );
   }
 
   @override
@@ -166,71 +224,8 @@ class _HomeContentState extends State<HomeContent> {
 
               const SizedBox(height: 12),
 
-              FutureBuilder<Map<String, dynamic>?>(
-                future: recentWorkoutFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
-                    return const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(20),
-                        child: Center(
-                          child: CircularProgressIndicator(),
-                        ),
-                      ),
-                    );
-                  }
+              _buildRecentWorkoutCard(),
 
-                  if (snapshot.hasError) {
-                    return Card(
-                      child: ListTile(
-                        leading: const CircleAvatar(
-                          child: Icon(Icons.error_outline),
-                        ),
-                        title: const Text('Failed to load'),
-                        subtitle: Text('${snapshot.error}'),
-                        onTap: widget.onGoToHistory,
-                      ),
-                    );
-                  }
-
-                  final recent = snapshot.data;
-
-                  if (recent == null) {
-                    return Card(
-                      child: ListTile(
-                        leading: const CircleAvatar(
-                          child: Icon(Icons.fitness_center),
-                        ),
-                        title: const Text(
-                          'No workouts yet',
-                        ),
-                        subtitle: const Text(
-                          'Your recent workouts will appear here.',
-                        ),
-                        onTap: widget.onGoToHistory,
-                      ),
-                    );
-                  }
-
-                  final date = DateTime.parse(recent['started_at']);
-                  final duration = recent['duration_seconds'] as int;
-
-                  return Card(
-                    child: ListTile(
-                      leading: const CircleAvatar(
-                        child: Icon(Icons.fitness_center),
-                      ),
-                      title: Text(recent['name']),
-                      subtitle: Text(
-                        '${formatDate(date)} • ${formatTime(duration)}',
-                      ),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: widget.onGoToHistory,
-                    ),
-                  );
-                },
-              ),
             ],
           ),
         ),

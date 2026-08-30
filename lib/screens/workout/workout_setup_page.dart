@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
-import '../../services/exercise_service.dart';
+//import '../../services/exercise_service.dart';
 import '../../models/exercise.dart';
 import 'active_workout_page.dart';
 //import '../../temp_data/recent_workout_data.dart';
+import '../../cache/workout_cache.dart';
+import '../../cache/exercise_cache.dart';
 
 //import '../../models/recent_workout.dart';
-import '../../services/workout_service.dart';
-import '../../temp_data/user.dart';
+//import '../../services/workout_service.dart';
+//simport '../../temp_data/user.dart';
 import '../../functions/format_date.dart';
 import '../../models/workout_details.dart';
 
@@ -24,96 +26,41 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
       TextEditingController();
 
   List<Exercise> selectedExercises = [];
-  List<Exercise> availableExercises = [];
 
-  bool isLoadingExercises = false;
-  String? exerciseError;
-
+  final exerciseCache = ExerciseCache.instance;
   // --------------------------------------------------
   // LOAD EXERCISES
   // --------------------------------------------------
 
-  Future<void> loadExercises() async {
-    setState(() {
-      isLoadingExercises = true;
-      exerciseError = null;
-    });
+  final cache = WorkoutCache.instance;
 
-    try {
-      final exercises = await ExerciseService.getExercises();
+  void _onCacheUpdate() => setState((){});
 
-      if (!mounted) return;
+  List<Workout> get recentWorkouts {
+  final seenNames = <String>{};
+  final deduped = <Workout>[];
 
-      setState(() {
-        availableExercises = exercises;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        exerciseError = e.toString();
-      });
-    } finally {
-      if (!mounted) return;
-
-      setState(() {
-        isLoadingExercises = false;
-      });
+  for (final workout in cache.workouts) {
+    if (seenNames.add(workout.name)) {
+      deduped.add(workout);
     }
   }
 
-  List<Workout> recentWorkouts = [];
-  bool isLoadingRecentWorkouts = false;
-  String? recentWorkoutsError;
-
-  Future<void> loadRecentWorkouts() async {
-  setState(() {
-    isLoadingRecentWorkouts = true;
-    recentWorkoutsError = null;
-  });
-
-  try {
-    final history = await WorkoutService.getWorkoutHistory(
-      userId: await CurrentUser.id,
-    );
-
-    // Samo zadnji trening vsakega unikatnega imena.
-    // history je že sortiran DESC po started_at (backend to počne),
-    // torej prvi zadetek vsakega imena je najnovejši.
-    final seenNames = <String>{};
-    final deduped = <Workout>[];
-
-    for (final workout in history) {
-      if (seenNames.add(workout.name)) {
-        deduped.add(workout);
-      }
-    }
-
-    if (!mounted) return;
-
-    setState(() {
-      recentWorkouts = deduped;
-    });
-  } catch (e) {
-    if (!mounted) return;
-
-    setState(() {
-      recentWorkoutsError = e.toString();
-    });
-  } finally {
-    if (!mounted) return;
-
-    setState(() {
-      isLoadingRecentWorkouts = false;
-    });
-  }
+  return deduped;
 }
 
   @override
   void initState() {
     super.initState();
-    loadExercises();
-    loadRecentWorkouts();
+    exerciseCache.addListener(_onCacheUpdate);
+    cache.addListener(_onCacheUpdate);
+  }
+
+  @override
+  void dispose() {
+    exerciseCache.removeListener(_onCacheUpdate);
+    cache.removeListener(_onCacheUpdate);
+    super.dispose();
   }
 
   // --------------------------------------------------
@@ -122,12 +69,6 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
 
   void dismissKeyboard() {
     FocusManager.instance.primaryFocus?.unfocus();
-  }
-
-  @override
-  void dispose() {
-    workoutNameController.dispose();
-    super.dispose();
   }
 
   // --------------------------------------------------
@@ -220,12 +161,12 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                   // --------------------------------------
 
                   Expanded(
-                    child: isLoadingExercises
+                    child: cache.isLoading
                         ? const Center(
                             child:
                                 CircularProgressIndicator(),
                           )
-                        : exerciseError != null
+                        : cache.error != null
                             ? Center(
                                 child: Column(
                                   mainAxisSize:
@@ -239,7 +180,7 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                                     ),
                                     ElevatedButton(
                                       onPressed:
-                                          loadExercises,
+                                          exerciseCache.refresh,
                                       child: const Text(
                                         'Retry',
                                       ),
@@ -254,12 +195,11 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                                   horizontal: 16,
                                 ),
                                 itemCount:
-                                    availableExercises
-                                        .length,
+                                    exerciseCache.exercises.length,
                                 itemBuilder:
                                     (context, index) {
                                   final exercise =
-                                      availableExercises[
+                                      exerciseCache.exercises[
                                           index];
 
                                   final isSelected =
@@ -492,7 +432,7 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                 ),
 
                 Expanded(
-                  child: recentWorkoutsError != null
+                  child: cache.error != null && cache.workouts.isEmpty
                       ? Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
@@ -502,7 +442,7 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                               ElevatedButton(
                                 onPressed: () {
                                   Navigator.pop(context);
-                                  loadRecentWorkouts();
+                                  cache.refresh();
                                 },
                                 child: const Text('Retry'),
                               ),
@@ -681,12 +621,12 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                       leading: const Icon(Icons.history),
                       title: const Text('Recent Workouts'),
                       subtitle: Text(
-                        isLoadingRecentWorkouts
+                        cache.isLoading
                             ? 'Loading...'
                             : 'Use a previous workout',
                       ),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: isLoadingRecentWorkouts ? null : openRecentWorkoutMenu,
+                      onTap: cache.isLoading ? null : openRecentWorkoutMenu,
                     ),
                   ),
 
