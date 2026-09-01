@@ -104,7 +104,7 @@ class _ProfilePageState extends State<ProfilePage> {
               leading: const Icon(Icons.settings_outlined),
               title: const Text('Settings'),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () {},
+              onTap: () => Navigator.pushNamed(context, '/profile/settings'),
             ),
           ),
 

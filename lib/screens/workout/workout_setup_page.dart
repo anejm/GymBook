@@ -114,9 +114,9 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
             return Container(
               height:
                   MediaQuery.of(context).size.height * 0.85,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(24),
                 ),
               ),
@@ -128,7 +128,7 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
+                      color: Theme.of(context).colorScheme.outline,
                       borderRadius:
                           BorderRadius.circular(10),
                     ),
@@ -155,6 +155,8 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                       ],
                     ),
                   ),
+
+                  
 
                   // --------------------------------------
                   // EXERCISE LIST
@@ -251,7 +253,9 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                                                 .withOpacity(
                                                   0.08,
                                                 )
-                                            : Colors.white,
+                                            : Theme.of(context)
+                                                .colorScheme
+                                                .surface,
                                         borderRadius:
                                             BorderRadius
                                                 .circular(
@@ -265,8 +269,9 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                                                 )
                                                   .colorScheme
                                                   .primary
-                                              : Colors.grey
-                                                  .shade300,
+                                              : Theme.of(context)
+                                                  .colorScheme
+                                                  .outline,
                                           width:
                                               isSelected
                                                   ? 2
@@ -283,17 +288,19 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                                                     )
                                                       .colorScheme
                                                       .primary
-                                                  : Colors
-                                                      .grey
-                                                      .shade100,
+                                                  : Theme.of(context)
+                                                      .colorScheme
+                                                      .surfaceContainerHighest,
                                           child: Icon(
                                             Icons
                                                 .fitness_center,
                                             color: isSelected
-                                                ? Colors.white
-                                                : Colors
-                                                    .grey
-                                                    .shade600,
+                                                ? Theme.of(context)
+                                                    .colorScheme
+                                                    .onPrimary
+                                                : Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
                                           ),
                                         ),
                                         title: Text(
@@ -337,9 +344,9 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                                                       const ValueKey(
                                                     false,
                                                   ),
-                                                  color: Colors
-                                                      .grey
-                                                      .shade400,
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .outline,
                                                 ),
                                         ),
                                       ),
@@ -400,9 +407,9 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
       builder: (context) {
         return Container(
           height: MediaQuery.of(context).size.height * 0.85,
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: const BorderRadius.vertical(
               top: Radius.circular(24),
             ),
           ),
@@ -415,7 +422,7 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey,
+                    color: Theme.of(context).colorScheme.outline,
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
