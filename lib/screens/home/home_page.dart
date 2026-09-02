@@ -38,7 +38,8 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
-      HomeContent(onGoToHistory: () => goToTab(1)),
+      HomeContent(onGoToHistory: () => goToTab(1),
+                  onGoToInsights: () => goToTab(2),),
       const HistoryPage(),
       const InsightsPage(),
       const ProfilePage(),
@@ -84,10 +85,12 @@ class _HomePageState extends State<HomePage> {
 
 class HomeContent extends StatefulWidget {
   final VoidCallback onGoToHistory;
+  final VoidCallback onGoToInsights;
 
   const HomeContent({
     super.key,
     required this.onGoToHistory,
+    required this.onGoToInsights,
   });
 
   @override

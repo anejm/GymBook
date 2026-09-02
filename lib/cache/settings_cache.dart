@@ -1,38 +1,41 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsCache extends ChangeNotifier {
   SettingsCache._();
+
   static final instance = SettingsCache._();
 
-  bool _darkMode = false;
-  double _textScale = 1.0;
+  bool darkMode = false;
+  double textScale = 1.0;
 
-  bool get darkMode => _darkMode;
-  double get textScale => _textScale;
+  static const String _darkModeKey = 'dark_mode';
+  static const String _textScaleKey = 'text_scale';
 
   Future<void> load() async {
     final prefs = await SharedPreferences.getInstance();
-    _darkMode = prefs.getBool('dark_mode') ?? false;
-    _textScale = prefs.getDouble('text_scale') ?? 1.0;
+
+    darkMode = prefs.getBool(_darkModeKey) ?? false;
+    textScale = prefs.getDouble(_textScaleKey) ?? 1.0;
+
     notifyListeners();
   }
 
   Future<void> setDarkMode(bool value) async {
-    _darkMode = value;
+    darkMode = value;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_darkModeKey, value);
+
     notifyListeners();
-    (await SharedPreferences.getInstance()).setBool('dark_mode', value);
   }
 
   Future<void> setTextScale(double value) async {
-    _textScale = value;
-    notifyListeners();
-    (await SharedPreferences.getInstance()).setDouble('text_scale', value);
-  }
+    textScale = value;
 
-  void clear() {
-    _darkMode = false;
-    _textScale = 1.0;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble(_textScaleKey, value);
+
     notifyListeners();
   }
 }

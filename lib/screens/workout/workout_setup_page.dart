@@ -12,6 +12,7 @@ import '../../cache/exercise_cache.dart';
 //simport '../../temp_data/user.dart';
 import '../../functions/format_date.dart';
 import '../../models/workout_details.dart';
+import '../../models/muscle_category.dart';
 
 class WorkoutSetupPage extends StatefulWidget {
   const WorkoutSetupPage({super.key});
@@ -101,8 +102,9 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
   void openExerciseMenu() {
     dismissKeyboard();
 
-    List<Exercise> temporarySelection =
-        List.from(selectedExercises);
+    List<Exercise> temporarySelection = List.from(selectedExercises);
+    String searchQuery = '';
+    String selectedCategory = 'All';
 
     showModalBottomSheet(
       context: context,
@@ -111,275 +113,192 @@ class _WorkoutSetupPageState extends State<WorkoutSetupPage> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            
+
+            final filteredExercises = exerciseCache.exercises.where((exercise) {
+              final matchesSearch = searchQuery.isEmpty ||
+                  exercise.name.toLowerCase().contains(searchQuery.toLowerCase());
+              final matchesCategory = selectedCategory == 'All' ||
+                  categoryOf(exercise.primaryMuscle) == selectedCategory;
+              return matchesSearch && matchesCategory;
+            }).toList();
+
             return Container(
-              height:
-                  MediaQuery.of(context).size.height * 0.85,
+              height: MediaQuery.of(context).size.height * 0.85,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(24),
-                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
               ),
               child: Column(
                 children: [
                   const SizedBox(height: 12),
-
                   Container(
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.outline,
-                      borderRadius:
-                          BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-
                   Padding(
                     padding: const EdgeInsets.all(20),
                     child: Row(
                       children: [
                         Expanded(
-                          child: Text(
-                            'Choose Exercises',
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium,
-                          ),
+                          child: Text('Choose Exercises', style: Theme.of(context).textTheme.headlineMedium),
                         ),
                         Text(
                           '${temporarySelection.length} selected',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium,
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ],
                     ),
                   ),
 
-                  
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: TextField(
+                      onChanged: (value) => setModalState(() => searchQuery = value),
+                      decoration: InputDecoration(
+                        hintText: 'Search exercises',
+                        prefixIcon: const Icon(Icons.search),
+                        isDense: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ),
 
-                  // --------------------------------------
-                  // EXERCISE LIST
-                  // --------------------------------------
+                  const SizedBox(height: 12),
+
+                  SizedBox(
+                    height: 36,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: exerciseCategories.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 8),
+                      itemBuilder: (context, index) {
+                        final category = exerciseCategories[index];
+                        final isSelected = category == selectedCategory;
+
+                        return ChoiceChip(
+                          label: Text(category),
+                          selected: isSelected,
+                          onSelected: (_) => setModalState(() => selectedCategory = category),
+                        );
+                      },
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
 
                   Expanded(
                     child: cache.isLoading
-                        ? const Center(
-                            child:
-                                CircularProgressIndicator(),
-                          )
+                        ? const Center(child: CircularProgressIndicator())
                         : cache.error != null
                             ? Center(
                                 child: Column(
-                                  mainAxisSize:
-                                      MainAxisSize.min,
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Text(
-                                      'Failed to load exercises',
-                                    ),
-                                    const SizedBox(
-                                      height: 8,
-                                    ),
+                                    const Text('Failed to load exercises'),
+                                    const SizedBox(height: 8),
                                     ElevatedButton(
-                                      onPressed:
-                                          exerciseCache.refresh,
-                                      child: const Text(
-                                        'Retry',
-                                      ),
+                                      onPressed: exerciseCache.refresh,
+                                      child: const Text('Retry'),
                                     ),
                                   ],
                                 ),
                               )
-                            : ListView.builder(
-                                padding:
-                                    const EdgeInsets
-                                        .symmetric(
-                                  horizontal: 16,
-                                ),
-                                itemCount:
-                                    exerciseCache.exercises.length,
-                                itemBuilder:
-                                    (context, index) {
-                                  final exercise =
-                                      exerciseCache.exercises[
-                                          index];
+                            : filteredExercises.isEmpty
+                                ? const Center(child: Text('No exercises found.'))
+                                : ListView.builder(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    itemCount: filteredExercises.length,
+                                    itemBuilder: (context, index) {
+                                      final exercise = filteredExercises[index];
 
-                                  final isSelected =
-                                      temporarySelection
-                                          .any(
-                                    (selected) =>
-                                        selected.id ==
-                                        exercise.id,
-                                  );
+                                      final isSelected = temporarySelection.any(
+                                        (selected) => selected.id == exercise.id,
+                                      );
 
-                                  return GestureDetector(
-                                    onTap: () {
-                                      setModalState(() {
-                                        if (isSelected) {
-                                          temporarySelection
-                                              .removeWhere(
-                                            (selected) =>
-                                                selected
-                                                    .id ==
-                                                exercise.id,
-                                          );
-                                        } else {
-                                          temporarySelection
-                                              .add(
-                                            exercise,
-                                          );
-                                        }
-                                      });
-                                    },
-                                    child:
-                                        AnimatedContainer(
-                                      duration:
-                                          const Duration(
-                                        milliseconds: 150,
-                                      ),
-                                      margin:
-                                          const EdgeInsets
-                                              .only(
-                                        bottom: 10,
-                                      ),
-                                      decoration:
-                                          BoxDecoration(
-                                        color: isSelected
-                                            ? Theme.of(
-                                                context,
-                                              )
-                                                .colorScheme
-                                                .primary
-                                                .withOpacity(
-                                                  0.08,
-                                                )
-                                            : Theme.of(context)
-                                                .colorScheme
-                                                .surface,
-                                        borderRadius:
-                                            BorderRadius
-                                                .circular(
-                                          14,
-                                        ),
-                                        border:
-                                            Border.all(
-                                          color: isSelected
-                                              ? Theme.of(
-                                                  context,
-                                                )
-                                                  .colorScheme
-                                                  .primary
-                                              : Theme.of(context)
-                                                  .colorScheme
-                                                  .outline,
-                                          width:
-                                              isSelected
-                                                  ? 2
-                                                  : 1,
-                                        ),
-                                      ),
-                                      child: ListTile(
-                                        leading:
-                                            CircleAvatar(
-                                          backgroundColor:
-                                              isSelected
-                                                  ? Theme.of(
-                                                      context,
-                                                    )
-                                                      .colorScheme
-                                                      .primary
-                                                  : Theme.of(context)
-                                                      .colorScheme
-                                                      .surfaceContainerHighest,
-                                          child: Icon(
-                                            Icons
-                                                .fitness_center,
+                                      return GestureDetector(
+                                        onTap: () {
+                                          setModalState(() {
+                                            if (isSelected) {
+                                              temporarySelection.removeWhere(
+                                                (selected) => selected.id == exercise.id,
+                                              );
+                                            } else {
+                                              temporarySelection.add(exercise);
+                                            }
+                                          });
+                                        },
+                                        child: AnimatedContainer(
+                                          duration: const Duration(milliseconds: 150),
+                                          margin: const EdgeInsets.only(bottom: 10),
+                                          decoration: BoxDecoration(
                                             color: isSelected
-                                                ? Theme.of(context)
-                                                    .colorScheme
-                                                    .onPrimary
-                                                : Theme.of(context)
-                                                    .colorScheme
-                                                    .onSurfaceVariant,
+                                                ? Theme.of(context).colorScheme.primary.withOpacity(0.08)
+                                                : Theme.of(context).colorScheme.surface,
+                                            borderRadius: BorderRadius.circular(14),
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? Theme.of(context).colorScheme.primary
+                                                  : Theme.of(context).colorScheme.outline,
+                                              width: isSelected ? 2 : 1,
+                                            ),
+                                          ),
+                                          child: ListTile(
+                                            leading: CircleAvatar(
+                                              backgroundColor: isSelected
+                                                  ? Theme.of(context).colorScheme.primary
+                                                  : Theme.of(context).colorScheme.surfaceContainerHighest,
+                                              child: Icon(
+                                                Icons.fitness_center,
+                                                color: isSelected
+                                                    ? Theme.of(context).colorScheme.onPrimary
+                                                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                                              ),
+                                            ),
+                                            title: Text(
+                                              exercise.name,
+                                              style: const TextStyle(fontWeight: FontWeight.w600),
+                                            ),
+                                            subtitle: Text(exercise.primaryMuscle),
+                                            trailing: AnimatedSwitcher(
+                                              duration: const Duration(milliseconds: 150),
+                                              child: isSelected
+                                                  ? Icon(
+                                                      Icons.check_circle,
+                                                      key: const ValueKey(true),
+                                                      color: Theme.of(context).colorScheme.primary,
+                                                    )
+                                                  : Icon(
+                                                      Icons.circle_outlined,
+                                                      key: const ValueKey(false),
+                                                      color: Theme.of(context).colorScheme.outline,
+                                                    ),
+                                            ),
                                           ),
                                         ),
-                                        title: Text(
-                                          exercise.name,
-                                          style:
-                                              const TextStyle(
-                                            fontWeight:
-                                                FontWeight
-                                                    .w600,
-                                          ),
-                                        ),
-                                        subtitle: Text(
-                                          exercise
-                                              .primaryMuscle,
-                                        ),
-                                        trailing:
-                                            AnimatedSwitcher(
-                                          duration:
-                                              const Duration(
-                                            milliseconds:
-                                                150,
-                                          ),
-                                          child: isSelected
-                                              ? Icon(
-                                                  Icons
-                                                      .check_circle,
-                                                  key:
-                                                      const ValueKey(
-                                                    true,
-                                                  ),
-                                                  color: Theme.of(
-                                                    context,
-                                                  )
-                                                      .colorScheme
-                                                      .primary,
-                                                )
-                                              : Icon(
-                                                  Icons
-                                                      .circle_outlined,
-                                                  key:
-                                                      const ValueKey(
-                                                    false,
-                                                  ),
-                                                  color: Theme.of(context)
-                                                      .colorScheme
-                                                      .outline,
-                                                ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
+                                      );
+                                    },
+                                  ),
                   ),
-
-                  // --------------------------------------
-                  // ADD BUTTON
-                  // --------------------------------------
 
                   SafeArea(
                     child: Padding(
-                      padding:
-                          const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(16),
                       child: SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () {
                             setState(() {
-                              selectedExercises =
-                                  List.from(
-                                temporarySelection,
-                              );
+                              selectedExercises = List.from(temporarySelection);
                             });
-
                             Navigator.pop(context);
                           },
-                          child: Text(
-                            'Add ${temporarySelection.length} Exercises',
-                          ),
+                          child: Text('Add ${temporarySelection.length} Exercises'),
                         ),
                       ),
                     ),

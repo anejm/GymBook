@@ -24,14 +24,16 @@ import 'screens/profile/personal_info.dart';
 
 import 'theme/app_theme.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  SystemChrome.setPreferredOrientations([
+  await SettingsCache.instance.load();
+
+  await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
-  ]).then((_) {
-    runApp(const FitnessApp());
-  });
+  ]);
+
+  runApp(const FitnessApp());
 }
 
 class FitnessApp extends StatefulWidget {
@@ -80,21 +82,13 @@ class _FitnessAppState extends State<FitnessApp> {
         '/login': (context) => const LoginPage(),
         '/login/form': (context) => const LoginFormPage(),
         '/register': (context) => const RegisterPage(),
+
         '/home': (context) => const HomePage(),
 
         '/workout/setup': (context) => const WorkoutSetupPage(),
-        //'/workout/active': (context) => const ActiveWorkoutPage(),
-        //'/workout/summary': (context) => const WorkoutSummaryPage(),
-
-        '/history': (context) => const HistoryPage(),
-        //'/history/details': (context) => const WorkoutDetailsPage(),
-        //'/history/exercise': (context) => const ExerciseDetailsPage(),
-
-        '/insights': (context) => const InsightsPage(),
 
         '/calendar': (context) => const CalendarPage(),
 
-        '/profile': (context) => const ProfilePage(),
         '/profile/personal_info': (context) => PersonalInfoPage(),
         '/profile/settings': (context) => SettingsPage(),
       },
