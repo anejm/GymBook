@@ -28,6 +28,22 @@ class WorkoutCache extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> deleteWorkout(String workoutId) async {
+    try {
+      await WorkoutService.deleteWorkout(
+        workoutId: workoutId,
+      );
+
+      workouts.removeWhere((workout) => workout.id == workoutId);
+
+      notifyListeners();
+    } catch (e) {
+      error = e;
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   void clear() {
     workouts = [];       
     isLoading = false;

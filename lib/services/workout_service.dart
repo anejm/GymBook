@@ -85,4 +85,21 @@ class WorkoutService {
 
     return decoded as Map<String, dynamic>;
   }
+
+  static Future<void> deleteWorkout({
+    required String workoutId,
+  }) async {
+    final response = await http.delete(
+      Uri.parse(
+        '${ExerciseService.baseUrl}/workouts/$workoutId',
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'Failed to delete workout: '
+        '${response.statusCode} ${response.body}',
+      );
+    }
+  }
 }

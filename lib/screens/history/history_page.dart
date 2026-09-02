@@ -20,6 +20,52 @@ class _HistoryPageState extends State<HistoryPage> {
   final cache = WorkoutCache.instance;
   void _onUpdate() => setState(() {});
 
+  Future<void> _deleteWorkout(Workout workout) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Delete workout?'),
+          content: Text(
+            'Are you sure you want to delete "${workout.name}"?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      await cache.deleteWorkout(workout.id);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Workout deleted'),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to delete workout'),
+        ),
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -85,7 +131,19 @@ class _HistoryPageState extends State<HistoryPage> {
                       '${formatDate(workout.date)} • '
                       '${formatTime(workout.duration)}',
                     ),
-                    trailing: const Icon(Icons.chevron_right),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'delete') {
+                          _deleteWorkout(workout);
+                        }
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Delete workout'),
+                        ),
+                      ],
+                    ),
                     onTap: () {
                       Navigator.push(
                         context,
