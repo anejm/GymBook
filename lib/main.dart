@@ -6,6 +6,7 @@ import 'screens/login/login_form_page.dart';
 import 'screens/login/register_page.dart';
 import 'screens/profile/settings.dart';
 import 'functions/auth_gate.dart';
+import 'services/workout_notification_service.dart';
 
 import 'screens/workout/workout_setup_page.dart';
 //import 'screens/workout/active_workout_page.dart';
@@ -28,6 +29,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await SettingsCache.instance.load();
+
+  await WorkoutNotificationService.initialize();
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,

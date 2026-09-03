@@ -13,6 +13,7 @@ import '../../cache/exercise_cache.dart';
 import '../../functions/format_date.dart';
 import '../../models/workout_details.dart';
 import '../../models/muscle_category.dart';
+//import '../../widgets/exercise_picker_sheet.dart';
 
 class WorkoutSetupPage extends StatefulWidget {
   const WorkoutSetupPage({super.key});
