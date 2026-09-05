@@ -3,6 +3,7 @@ import 'dart:async';
 
 import '../../functions/format_time.dart';
 import '../../cache/exercise_cache.dart';
+import '../../cache/workout_cache.dart';
 
 import '../../models/exercise.dart';
 import '../../models/workout_details.dart';
@@ -47,6 +48,7 @@ class _ActiveWorkoutPageState
   int seconds = 0;
   int? expandedExerciseIndex;
   final exerciseCache = ExerciseCache.instance;
+  final workoutCache = WorkoutCache.instance;
 
   String exerciseKey(Exercise exercise) {
     return exercise.id.toString();
@@ -647,6 +649,13 @@ class _ActiveWorkoutPageState
                       final exercise =
                           exercises[index];
 
+                      final lastPerformance =
+                        workoutCache.getLastPerformanceForExercise(
+                          exercise.id.toString(),
+                        );
+
+                      final lastSets = lastPerformance?.sets ?? [];
+
                       final isExpanded =
                           expandedExerciseIndex == index;
 
@@ -893,7 +902,11 @@ class _ActiveWorkoutPageState
 
                                               decoration:
                                                   InputDecoration(
-                                                hintText: 'kg',
+                                                hintText: setIndex < lastSets.length
+                                                    ? '${lastSets[setIndex].weight % 1 == 0
+                                                        ? lastSets[setIndex].weight.toInt()
+                                                        : lastSets[setIndex].weight} kg'
+                                                    : 'kg',
 
                                                 hintStyle: TextStyle(
                                                   color: Colors.grey.withOpacity(0.4)
@@ -963,7 +976,9 @@ class _ActiveWorkoutPageState
 
                                               decoration:
                                                   InputDecoration(
-                                                hintText: 'Reps',
+                                                hintText: setIndex < lastSets.length
+                                                    ? '${lastSets[setIndex].reps}'
+                                                    : 'Reps',
                                                 hintStyle: TextStyle(
                                                   color: Colors.grey.withOpacity(0.4)
                                                 ),
